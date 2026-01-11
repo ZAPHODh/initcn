@@ -63,7 +63,7 @@ export function SidebarContent({
               data-collapsed={collapsed}
               data-hovered={collapsed && hovered}
               className={cn(
-                "absolute flex flex-col w-full start-0 inset-y-0 items-end bg-fd-card text-sm border-e duration-250 *:w-(--fd-sidebar-width)",
+                "absolute flex flex-col w-full start-0 inset-y-0 bg-fd-card text-sm border-e duration-250",
                 collapsed && [
                   "inset-y-2 rounded-xl transition-transform border w-(--fd-sidebar-width)",
                   hovered
@@ -79,7 +79,9 @@ export function SidebarContent({
               {...props}
               {...rest}
             >
-              {children}
+              <div className="flex flex-col w-(--fd-sidebar-width) h-full">
+                {children}
+              </div>
             </aside>
           </div>
           <div
