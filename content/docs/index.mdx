@@ -7,7 +7,16 @@ Welcome to initcn! This guide will help you set up and start using our infrastru
 
 ## Quick Start
 
-initcn is a trusted registry for shadcn/ui. You can start adding infrastructure configurations right away!
+This will add the initcn registry to your `components.json`:
+
+```json
+{
+  "registries": {
+    "@initcn": "https://initcn.vercel.app/r/{name}.json"
+  }
+}
+```
+You can start adding infrastructure configurations right away!
 
 <Tabs items={["pnpm", "npm", "yarn", "bun"]}>
   <Tab value="pnpm">
@@ -35,15 +44,7 @@ initcn is a trusted registry for shadcn/ui. You can start adding infrastructure 
   </Tab>
 </Tabs>
 
-This will add the initcn registry to your `components.json`:
 
-```json
-{
-  "registries": {
-    "@initcn": "https://initcn.vercel.app/r/{name}.json"
-  }
-}
-```
 
 ## Initialize MCP (optional)
 
