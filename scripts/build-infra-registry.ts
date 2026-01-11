@@ -1,12 +1,12 @@
 #!/usr/bin/env tsx
 /**
- * Build script for generating auth-otp registry items
+ * Build script for generating infrastructure registry items
  *
- * Generates registry JSON files for:
- * - auth-otp-shared (database-agnostic shared code)
- * - auth-otp-prisma (Prisma implementation)
- * - auth-otp-drizzle (Drizzle implementation)
- * - auth-otp (alias for auth-otp-prisma)
+ * Auto-discovers any directory in src/registry/infra/ with a config.json file
+ * and generates shadcn-compatible registry JSON files.
+ *
+ * This is a metadata-driven approach that uses config.json for registry metadata
+ * while preserving the existing file mapping logic for target paths.
  */
 
 import {
@@ -21,10 +21,18 @@ import { join, relative, extname } from "node:path";
 import { siteConfig } from "../src/config/site.js";
 
 const ROOT_DIR = process.cwd();
-const SHARED_SOURCE_DIR = join(ROOT_DIR, "src/registry/lib/auth-otp-shared");
-const PRISMA_SOURCE_DIR = join(ROOT_DIR, "src/registry/lib/auth-otp-prisma");
-const DRIZZLE_SOURCE_DIR = join(ROOT_DIR, "src/registry/lib/auth-otp-drizzle");
+const INFRA_DIR = join(ROOT_DIR, "src/registry/infra");
 const OUTPUT_DIR = join(ROOT_DIR, "public/r");
+
+interface ConfigJson {
+	name: string;
+	type: string;
+	title: string;
+	description: string;
+	dependencies?: string[];
+	devDependencies?: string[];
+	registryDependencies?: string[];
+}
 
 interface RegistryFile {
 	path: string;
@@ -59,7 +67,7 @@ function getAllTsFiles(dir: string): string[] {
 				walk(fullPath);
 			} else if (stat.isFile()) {
 				const ext = extname(item);
-				// Exclude index.ts files to avoid conflicts after path consolidation
+				// Exclude index.ts and config.json files
 				if ((ext === ".ts" || ext === ".tsx") && item !== "index.ts") {
 					files.push(fullPath);
 				}
@@ -84,7 +92,7 @@ function getTargetPath(filePath: string, sourceDir: string): string {
 		return relativePath;
 	}
 
-	// Components go to components/
+	// Components go to components/ (flattened)
 	if (relativePath.startsWith("components/")) {
 		const filename = relativePath.split("/").pop();
 		return `components/${filename}`;
@@ -105,7 +113,10 @@ function getFileType(
 ): "registry:lib" | "registry:block" | "registry:page" {
 	const relativePath = relative(sourceDir, filePath);
 
-	if (relativePath.startsWith("components/") || relativePath.startsWith("emails/")) {
+	if (
+		relativePath.startsWith("components/") ||
+		relativePath.startsWith("emails/")
+	) {
 		return "registry:block";
 	}
 
@@ -121,14 +132,13 @@ function toRegistryUrl(name: string): string {
 }
 
 function generateRegistry(
-	name: string,
-	title: string,
-	description: string,
+	configPath: string,
 	sourceDir: string,
-	dependencies: string[],
-	devDependencies: string[],
-	registryDependencies: string[] = [],
 ): RegistryItem {
+	// Read config.json
+	const config: ConfigJson = JSON.parse(readFileSync(configPath, "utf-8"));
+
+	// Get all TypeScript files in the directory
 	const allFiles = getAllTsFiles(sourceDir);
 
 	const registryFiles: RegistryFile[] = allFiles.map((filePath) => ({
@@ -140,17 +150,17 @@ function generateRegistry(
 
 	const item: RegistryItem = {
 		$schema: "https://ui.shadcn.com/schema/registry-item.json",
-		name,
+		name: config.name,
 		type: "registry:lib",
-		title,
-		description,
+		title: config.title,
+		description: config.description,
 		files: registryFiles,
-		dependencies,
-		devDependencies,
+		dependencies: config.dependencies,
+		devDependencies: config.devDependencies,
 	};
 
-	if (registryDependencies.length > 0) {
-		item.registryDependencies = registryDependencies.map(toRegistryUrl);
+	if (config.registryDependencies && config.registryDependencies.length > 0) {
+		item.registryDependencies = config.registryDependencies.map(toRegistryUrl);
 	}
 
 	return item;
@@ -167,75 +177,37 @@ function writeRegistryItem(item: RegistryItem) {
 }
 
 function main() {
-	console.log("🔨 Building auth-otp registry items...\n");
+	console.log("🔨 Building infrastructure registry items...\n");
 
-	// Generate auth-otp-shared
-	if (existsSync(SHARED_SOURCE_DIR)) {
-		const sharedItem = generateRegistry(
-			"auth-otp-shared",
-			"Auth OTP (Shared)",
-			"Database-agnostic shared code for OTP authentication",
-			SHARED_SOURCE_DIR,
-			[
-				"@oslojs/crypto",
-				"@oslojs/encoding",
-				"next-safe-action",
-				"@tanstack/react-form",
-				"sonner",
-			],
-			[],
-			["input-otp"],
-		);
-		writeRegistryItem(sharedItem);
+	if (!existsSync(INFRA_DIR)) {
+		console.log("⚠️  No infra directory found. Skipping infrastructure build.");
+		return;
 	}
 
-	// Generate auth-otp-prisma
-	if (existsSync(PRISMA_SOURCE_DIR)) {
-		const prismaItem = generateRegistry(
-			"auth-otp-prisma",
-			"Auth OTP (Prisma + Google)",
-			"OTP and Google OAuth authentication with Prisma ORM",
-			PRISMA_SOURCE_DIR,
-			[
-				"@prisma/client",
-				"resend",
-				"@upstash/ratelimit",
-				"@upstash/redis",
-				"arctic",
-			],
-			["prisma"],
-			["auth-otp-shared"],
-		);
-		writeRegistryItem(prismaItem);
+	// Auto-discover all directories with config.json
+	const infraDirs = readdirSync(INFRA_DIR).filter((name) => {
+		const dirPath = join(INFRA_DIR, name);
+		const configPath = join(dirPath, "config.json");
+		return statSync(dirPath).isDirectory() && existsSync(configPath);
+	});
 
-		// Create auth-otp alias
-		const aliasItem = { ...prismaItem, name: "auth-otp" };
-		writeRegistryItem(aliasItem);
-		console.log("  (alias for auth-otp-prisma)\n");
+	if (infraDirs.length === 0) {
+		console.log(
+			"⚠️  No infrastructure configs found (no config.json files).",
+		);
+		return;
 	}
 
-	// Generate auth-otp-drizzle
-	if (existsSync(DRIZZLE_SOURCE_DIR)) {
-		const drizzleItem = generateRegistry(
-			"auth-otp-drizzle",
-			"Auth OTP (Drizzle + Google)",
-			"OTP and Google OAuth authentication with Drizzle ORM",
-			DRIZZLE_SOURCE_DIR,
-			[
-				"drizzle-orm",
-				"postgres",
-				"resend",
-				"@upstash/ratelimit",
-				"@upstash/redis",
-				"arctic",
-			],
-			["drizzle-kit"],
-			["auth-otp-shared"],
-		);
-		writeRegistryItem(drizzleItem);
+	// Build each infrastructure config
+	for (const dirName of infraDirs) {
+		const sourceDir = join(INFRA_DIR, dirName);
+		const configPath = join(sourceDir, "config.json");
+
+		const item = generateRegistry(configPath, sourceDir);
+		writeRegistryItem(item);
 	}
 
-	console.log("✨ Done!");
+	console.log(`\n✨ Done! Generated ${infraDirs.length} infrastructure items.`);
 }
 
 main();

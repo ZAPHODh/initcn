@@ -1,0 +1,16 @@
+{
+  "name": "auth-otp-drizzle",
+  "type": "registry:lib",
+  "title": "Auth OTP (Drizzle + Google)",
+  "description": "OTP and Google OAuth authentication with Drizzle ORM",
+  "dependencies": [
+    "drizzle-orm",
+    "postgres",
+    "resend",
+    "@upstash/ratelimit",
+    "@upstash/redis",
+    "arctic"
+  ],
+  "devDependencies": ["drizzle-kit"],
+  "registryDependencies": ["auth-otp-shared"]
+}

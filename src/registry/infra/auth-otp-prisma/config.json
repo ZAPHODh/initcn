@@ -1,0 +1,15 @@
+{
+  "name": "auth-otp-prisma",
+  "type": "registry:lib",
+  "title": "Auth OTP (Prisma + Google)",
+  "description": "OTP and Google OAuth authentication with Prisma ORM",
+  "dependencies": [
+    "@prisma/client",
+    "resend",
+    "@upstash/ratelimit",
+    "@upstash/redis",
+    "arctic"
+  ],
+  "devDependencies": ["prisma"],
+  "registryDependencies": ["auth-otp-shared"]
+}

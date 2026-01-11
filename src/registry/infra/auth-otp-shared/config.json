@@ -1,0 +1,14 @@
+{
+  "name": "auth-otp-shared",
+  "type": "registry:lib",
+  "title": "Auth OTP (Shared)",
+  "description": "Database-agnostic shared code for OTP authentication",
+  "dependencies": [
+    "@oslojs/crypto",
+    "@oslojs/encoding",
+    "next-safe-action",
+    "@tanstack/react-form",
+    "sonner"
+  ],
+  "registryDependencies": ["input-otp", "dialog"]
+}

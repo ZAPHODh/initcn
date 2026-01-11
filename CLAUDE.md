@@ -19,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 # Development
 pnpm dev              # Start Next.js dev server
-pnpm build            # Build for production (runs fumadocs-registry && next build)
+pnpm build            # Build for production (infra registry → fumadocs-registry → next build)
 pnpm start            # Start production server
 
 # Code Quality
@@ -28,6 +28,7 @@ pnpm format           # Format code with Biome
 pnpm types:check      # Type check (runs fumadocs-mdx && next typegen && tsc --noEmit)
 
 # Registry
+pnpm build:registry   # Build all registry files (infra + components)
 pnpm test:registry    # Test registry JSON generation
 ```
 
@@ -35,15 +36,23 @@ pnpm test:registry    # Test registry JSON generation
 
 ### Registry System
 
-The core of initcn is the registry system that distributes infrastructure configurations similar to how shadcn/ui distributes components:
+The core of initcn is a **hybrid registry system** that distributes infrastructure configurations similar to how shadcn/ui distributes components:
 
 ```
-Flow:
-1. Source: src/registry/ contains infrastructure config templates
-2. Build: fumadocs-registry processes files → generates JSON
+Build Flow:
+1. Source: src/registry/ contains three types of items:
+   - lib/   → Simple utilities (fumadocs-registry)
+   - ui/    → UI components (fumadocs-registry)
+   - infra/ → Infrastructure configs (custom script + metadata)
+
+2. Build Process:
+   a. build-infra-registry.ts → Processes multi-file infra configs
+   b. fumadocs-registry → Processes single-file lib/ui components
+   c. next build → Builds Next.js application
+
 3. Output: public/r/*.json (shadcn-compatible registry format)
 4. Distribution: Served via https://initcn.vercel.app/r/config-name.json
-5. Installation: Users install via CLI or manual copy
+5. Installation: Users install via npx shadcn@latest add [url]
 ```
 
 **Registry JSON Format:**
@@ -73,10 +82,24 @@ initcn/
 │   │   ├── api/               # API routes
 │   │   └── layout.tsx         # Root layout
 │   ├── components/            # Website UI components
-│   ├── registry/              # Infrastructure config templates
-│   │   ├── lib/              # Configuration files, utilities
-│   │   ├── ui/               # UI components (if needed)
-│   │   └── index.ts          # Registry exports
+│   ├── registry/              # Registry source files (3-tier structure)
+│   │   ├── lib/              # Simple utilities (auto-discovered by fumadocs-registry)
+│   │   │   ├── utils.ts
+│   │   │   └── use-controllable-state.ts
+│   │   ├── ui/               # UI components (auto-discovered by fumadocs-registry)
+│   │   │   └── input-otp.tsx
+│   │   └── infra/            # Infrastructure configs (custom build script)
+│   │       ├── auth-otp-shared/
+│   │       │   ├── config.json       # Registry metadata
+│   │       │   ├── components/       # React components
+│   │       │   ├── client/           # Client utilities
+│   │       │   └── server/           # Server utilities
+│   │       ├── auth-otp-prisma/
+│   │       │   ├── config.json
+│   │       │   └── ...
+│   │       └── auth-otp-drizzle/
+│   │           ├── config.json
+│   │           └── ...
 │   └── lib/                   # Shared utilities
 ├── content/docs/              # MDX documentation
 │   ├── index.mdx             # Docs homepage
@@ -84,6 +107,8 @@ initcn/
 │   └── [feature]/            # Feature-specific docs (auth, i18n, payments, etc.)
 ├── public/r/                  # Generated registry JSON files (gitignored)
 ├── scripts/                   # Build and test scripts
+│   ├── build-infra-registry.ts  # Custom builder for infra/ configs
+│   └── test-registry.js         # Registry validation
 ├── registry.config.ts         # Registry configuration
 ├── source.config.ts          # Fumadocs MDX configuration
 └── components.json           # shadcn/ui configuration
@@ -178,13 +203,78 @@ Example: `feat(auth): add OAuth configuration template`
 
 ## Working with the Registry
 
+### Three-Tier Registry Architecture
+
+The registry is organized into three categories:
+
+1. **lib/** - Simple utilities and hooks
+   - Auto-discovered by fumadocs-registry
+   - Single-file exports
+   - Example: `utils.ts`, `use-controllable-state.ts`
+   - Output: `lib/${name}.ts`
+
+2. **ui/** - UI components
+   - Auto-discovered by fumadocs-registry
+   - Single-file React components
+   - Example: `input-otp.tsx`
+   - Output: `components/ui/${name}.tsx`
+
+3. **infra/** - Infrastructure configurations
+   - Custom build script (build-infra-registry.ts)
+   - Multi-file, multi-directory patterns
+   - Metadata-driven via config.json
+   - Example: `auth-otp-prisma/`, `auth-otp-drizzle/`
+   - Output: Custom target paths per file
+
 ### Adding New Infrastructure Configs
 
-1. Create template files in `src/registry/lib/[feature]/`
-2. Add documentation in `content/docs/[feature]/`
-3. Update `src/registry/index.ts` with exports
-4. Run `pnpm build` to generate registry JSON
-5. Verify with `pnpm test:registry`
+For multi-file infrastructure patterns (auth, i18n, payments, etc.):
+
+1. **Create directory structure:**
+   ```
+   src/registry/infra/my-feature/
+   ├── config.json          # Registry metadata (required)
+   ├── components/          # React components → components/
+   ├── api/                 # API routes → app/api/
+   ├── server/              # Server code → lib/server/auth/
+   └── client/              # Client code → lib/server/auth/
+   ```
+
+2. **Create config.json:**
+   ```json
+   {
+     "name": "my-feature",
+     "type": "registry:lib",
+     "title": "My Feature",
+     "description": "Description of what this does",
+     "dependencies": ["package1", "package2"],
+     "devDependencies": ["dev-package"],
+     "registryDependencies": ["other-registry-item"]
+   }
+   ```
+
+3. **File Target Mapping Rules:**
+   - `api/*` → `app/api/*`
+   - `app/*` → `app/*`
+   - `components/*` → `components/` (flattened)
+   - `emails/*` → `emails/*`
+   - Everything else → `lib/server/auth/*`
+
+4. **Build and verify:**
+   ```bash
+   pnpm build:registry  # Generates JSON
+   pnpm test:registry   # Validates schema compliance
+   ```
+
+5. **Add documentation:** Create `content/docs/[feature]/` pages
+
+### Adding Simple Utilities or UI Components
+
+For single-file components:
+
+1. Add file to `src/registry/lib/` or `src/registry/ui/`
+2. Run `pnpm build:registry`
+3. fumadocs-registry auto-discovers and generates JSON
 
 ### Documentation Structure
 
