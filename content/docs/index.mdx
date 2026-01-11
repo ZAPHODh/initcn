@@ -1,13 +1,62 @@
 ---
-title: Introduction
-description: Infrastructure and configuration registry for Next.js applications. Ship faster with ready-to-use setup templates.
+title: Getting Started
+description: Set up and start using initcn infrastructure configurations in your Next.js project.
 ---
 
-**initcn** is an infrastructure and configuration registry for Next.js applications, built on the shadcn registry architecture. The goal is simple: **help you ship infrastructure faster**.
+Welcome to initcn! This guide will help you set up and start using our infrastructure configurations in your project.
 
-## Not ui components -  infraestructure components.
+## Quick Start
 
-Like shadcn/ui, initcn is not a typical install-from-NPM library. It's an open collection of infrastructure configurations you can copy, modify, and customize directly in your codebase. You own the code. No wrappers, no overrides.
+initcn is a trusted registry for shadcn/ui. You can start adding infrastructure configurations right away!
 
-Setting up infrastructure is time-consuming. Authentication, internationalization, payments... initcn gives you battle-tested starting points so you can focus on what makes your product unique.
+<Tabs items={["pnpm", "npm", "yarn", "bun"]}>
+  <Tab value="pnpm">
+  ```bash
+  pnpm dlx shadcn@latest add @initcn/auth-otp-prisma
+  ```
+  </Tab>
 
+  <Tab value="npm">
+  ```bash
+  npx shadcn@latest add @initcn/auth-otp-prisma
+  ```
+  </Tab>
+
+  <Tab value="yarn">
+  ```bash
+  yarn dlx shadcn@latest add @initcn/auth-otp-prisma
+  ```
+  </Tab>
+
+  <Tab value="bun">
+  ```bash
+  bunx shadcn@latest add @initcn/auth-otp-prisma
+  ```
+  </Tab>
+</Tabs>
+
+This will add the initcn registry to your `components.json`:
+
+```json
+{
+  "registries": {
+    "@initcn": "https://initcn.vercel.app/r/{name}.json"
+  }
+}
+```
+
+## Initialize MCP (optional)
+
+This adds configuration to your IDE, enabling you to use the infrastructure configs directly with AI assistance. The AI will have full context of the entire initcn library.
+
+```bash
+pnpm dlx shadcn@latest mcp init
+```
+
+## Need Help?
+
+We're here to help you get started with initcn.
+
+- [GitHub Repository](https://github.com/ZAPHODh/initcn)
+- [Report Issues](https://github.com/ZAPHODh/initcn/issues)
+- [Browse Configurations](/docs)

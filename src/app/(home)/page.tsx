@@ -12,7 +12,7 @@ import {
 export default function HomePage() {
   const stats = [
     { value: "Auth", label: "with your ORM" },
-    { value: "Internationalization", label: "with next-international" },
+    { value: "I18n", label: "with next-international" },
     { value: "Payments", label: "Comming Soon" },
     { value: "More", label: "Coming Soon" },
     
