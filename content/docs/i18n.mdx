@@ -7,14 +7,6 @@ description: Type-safe i18n for Next.js with next-international
 
 Complete, production-ready internationalization using `next-international`. Type-safe translations with support for both server and client components, namespace organization, and automatic locale routing.
 
-## Features
-
-- **Type-safe translations** - Full TypeScript autocomplete for translation keys
-- **Server & Client support** - Works seamlessly with React Server Components and Client Components
-- **Namespace organization** - Organize translations by feature/domain
-- **Zero dependencies** - No additional UI components required
-- **Automatic routing** - Middleware handles locale detection and URL rewriting
-- **SEO-friendly** - Generates proper metadata for each locale
 
 ## Installation
 
@@ -48,13 +40,6 @@ Complete, production-ready internationalization using `next-international`. Type
   </Tab>
 </Tabs>
 
-This installs:
-- **Locale configuration** - Client and server i18n setup
-- **Example translations** - English translations with "not found" namespace
-- **404 page** - Localized catch-all page
-- **Language switcher** - Simple component for changing locales
-- **Middleware** - Automatic locale detection and routing
-
 ### Move app files into [locale] folder
 
 **IMPORTANT**: You must move your existing app routes into a `[locale]` dynamic segment:
@@ -74,13 +59,14 @@ After moving:
 
 ```bash
 app/
-├── layout.tsx          # Root layout
-├── globals.css         # Global styles
-├── api/                # API routes (no locale prefix)
-└── [locale]/           # All app routes go here
-    ├── page.tsx        # Homepage
-    ├── dashboard/      # Dashboard routes
-    ├── about/          # About page
+
+├── globals.css         
+├── api/                
+└── [locale]/           
+	├── layout.tsx          
+    ├── page.tsx        
+    ├── dashboard/      
+    ├── about/          
     └── [...rest]/      # 404 catch-all (installed by registry)
         └── page.tsx
 ```

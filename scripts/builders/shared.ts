@@ -1,0 +1,133 @@
+/**
+ * Shared utilities for infrastructure registry builders
+ */
+
+import {
+	readdirSync,
+	readFileSync,
+	statSync,
+	writeFileSync,
+	mkdirSync,
+} from "node:fs";
+import { join, relative, extname } from "node:path";
+
+export const ROOT_DIR = process.cwd();
+export const INFRA_DIR = join(ROOT_DIR, "src/registry/infra");
+export const OUTPUT_DIR = join(ROOT_DIR, "public/r");
+
+export interface ConfigJson {
+	name: string;
+	type: string;
+	title: string;
+	description: string;
+	dependencies?: string[];
+	devDependencies?: string[];
+	registryDependencies?: string[];
+}
+
+export interface RegistryFile {
+	path: string;
+	content: string;
+	type: "registry:lib" | "registry:block" | "registry:page";
+	target: string;
+}
+
+export interface RegistryItem {
+	$schema: string;
+	name: string;
+	type: "registry:lib";
+	title: string;
+	description: string;
+	files: RegistryFile[];
+	dependencies?: string[];
+	registryDependencies?: string[];
+	devDependencies?: string[];
+}
+
+/**
+ * Recursively finds all TypeScript files in a directory
+ * Excludes index.ts and config.json files
+ */
+export function getAllTsFiles(dir: string): string[] {
+	const files: string[] = [];
+
+	function walk(currentDir: string) {
+		const items = readdirSync(currentDir);
+
+		for (const item of items) {
+			const fullPath = join(currentDir, item);
+			const stat = statSync(fullPath);
+
+			if (stat.isDirectory()) {
+				walk(fullPath);
+			} else if (stat.isFile()) {
+				const ext = extname(item);
+				// Exclude index.ts and config.json files
+				if ((ext === ".ts" || ext === ".tsx") && item !== "index.ts") {
+					files.push(fullPath);
+				}
+			}
+		}
+	}
+
+	walk(dir);
+	return files;
+}
+
+/**
+ * Determines the file type based on the relative path
+ */
+export function getFileType(
+	filePath: string,
+	sourceDir: string,
+): "registry:lib" | "registry:block" | "registry:page" {
+	const relativePath = relative(sourceDir, filePath);
+
+	if (
+		relativePath.startsWith("components/") ||
+		relativePath.startsWith("emails/")
+	) {
+		return "registry:block";
+	}
+
+	if (relativePath.startsWith("app/")) {
+		return "registry:page";
+	}
+
+	return "registry:lib";
+}
+
+/**
+ * Converts registry dependency names to full URLs
+ */
+export function toRegistryUrl(name: string, registryBaseUrl: string): string {
+	return `${registryBaseUrl}/${name}.json`;
+}
+
+/**
+ * Writes a registry item to the output directory as JSON
+ */
+export function writeRegistryItem(item: RegistryItem) {
+	const outputPath = join(OUTPUT_DIR, `${item.name}.json`);
+	const content = JSON.stringify(item, null, 2);
+
+	mkdirSync(OUTPUT_DIR, { recursive: true });
+	writeFileSync(outputPath, content, "utf-8");
+
+	console.log(`✓ Generated ${item.name}.json (${item.files.length} files)`);
+}
+
+/**
+ * Builder interface that all infrastructure builders must implement
+ */
+export interface InfraBuilder {
+	/**
+	 * Checks if this builder can handle the given registry name
+	 */
+	canHandle(registryName: string): boolean;
+
+	/**
+	 * Determines the target path for a source file
+	 */
+	getTargetPath(filePath: string, sourceDir: string, registryName: string): string;
+}

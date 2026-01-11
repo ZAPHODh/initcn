@@ -5,151 +5,61 @@
  * Auto-discovers any directory in src/registry/infra/ with a config.json file
  * and generates shadcn-compatible registry JSON files.
  *
- * This is a metadata-driven approach that uses config.json for registry metadata
- * while preserving the existing file mapping logic for target paths.
+ * Uses per-infra builders to determine correct target paths for each infrastructure type.
  */
 
-import {
-	readdirSync,
-	readFileSync,
-	statSync,
-	writeFileSync,
-	mkdirSync,
-	existsSync,
-} from "node:fs";
-import { join, relative, extname } from "node:path";
+import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
+import { join, relative } from "node:path";
 import { siteConfig } from "../src/config/site.js";
+import {
+	ROOT_DIR,
+	INFRA_DIR,
+	getAllTsFiles,
+	getFileType,
+	toRegistryUrl,
+	writeRegistryItem,
+	type ConfigJson,
+	type RegistryFile,
+	type RegistryItem,
+	type InfraBuilder,
+} from "./builders/shared.js";
+import { AuthBuilder } from "./builders/auth.js";
+import { I18nBuilder } from "./builders/i18n.js";
 
-const ROOT_DIR = process.cwd();
-const INFRA_DIR = join(ROOT_DIR, "src/registry/infra");
-const OUTPUT_DIR = join(ROOT_DIR, "public/r");
+// Register all available builders
+const builders: InfraBuilder[] = [
+	new AuthBuilder(),
+	new I18nBuilder(),
+	// Add new builders here as needed
+];
 
-interface ConfigJson {
-	name: string;
-	type: string;
-	title: string;
-	description: string;
-	dependencies?: string[];
-	devDependencies?: string[];
-	registryDependencies?: string[];
+/**
+ * Finds the appropriate builder for a given registry name
+ * Falls back to the first builder (auth) if no match is found for backward compatibility
+ */
+function getBuilder(registryName: string): InfraBuilder {
+	const builder = builders.find((b) => b.canHandle(registryName));
+	if (!builder) {
+		console.warn(
+			`⚠️  No builder found for registry "${registryName}", falling back to auth builder`,
+		);
+		return builders[0]; // fallback to auth builder
+	}
+	return builder;
 }
 
-interface RegistryFile {
-	path: string;
-	content: string;
-	type: "registry:lib" | "registry:block" | "registry:page";
-	target: string;
-}
-
-interface RegistryItem {
-	$schema: string;
-	name: string;
-	type: "registry:lib";
-	title: string;
-	description: string;
-	files: RegistryFile[];
-	dependencies?: string[];
-	registryDependencies?: string[];
-	devDependencies?: string[];
-}
-
-function getAllTsFiles(dir: string): string[] {
-	const files: string[] = [];
-
-	function walk(currentDir: string) {
-		const items = readdirSync(currentDir);
-
-		for (const item of items) {
-			const fullPath = join(currentDir, item);
-			const stat = statSync(fullPath);
-
-			if (stat.isDirectory()) {
-				walk(fullPath);
-			} else if (stat.isFile()) {
-				const ext = extname(item);
-				// Exclude index.ts and config.json files
-				if ((ext === ".ts" || ext === ".tsx") && item !== "index.ts") {
-					files.push(fullPath);
-				}
-			}
-		}
-	}
-
-	walk(dir);
-	return files;
-}
-
-function getTargetPath(filePath: string, sourceDir: string, registryName: string): string {
-	const relativePath = relative(sourceDir, filePath);
-
-	// API routes go to app/api/
-	if (relativePath.startsWith("api/")) {
-		return `app/${relativePath}`;
-	}
-
-	// App pages go to app/
-	if (relativePath.startsWith("app/")) {
-		return relativePath;
-	}
-
-	// Components go to components/ (flattened)
-	if (relativePath.startsWith("components/")) {
-		const filename = relativePath.split("/").pop();
-		return `components/${filename}`;
-	}
-
-	// Emails go to emails/
-	if (relativePath.startsWith("emails/")) {
-		return relativePath;
-	}
-
-	// Middleware at root goes to root
-	if (relativePath === "middleware.ts") {
-		return "middleware.ts";
-	}
-
-	// Determine subdirectory based on registry name
-	// auth-* registries go to lib/server/auth/
-	// i18n-* registries go to lib/server/i18n/
-	let subDir = "auth"; // default for backward compatibility
-	if (registryName.startsWith("i18n-")) {
-		subDir = "i18n";
-	}
-
-	// Everything else (server code, db, actions, etc.) goes to lib/server/{subDir}/
-	return `lib/server/${subDir}/${relativePath}`;
-}
-
-function getFileType(
-	filePath: string,
-	sourceDir: string,
-): "registry:lib" | "registry:block" | "registry:page" {
-	const relativePath = relative(sourceDir, filePath);
-
-	if (
-		relativePath.startsWith("components/") ||
-		relativePath.startsWith("emails/")
-	) {
-		return "registry:block";
-	}
-
-	if (relativePath.startsWith("app/")) {
-		return "registry:page";
-	}
-
-	return "registry:lib";
-}
-
-function toRegistryUrl(name: string): string {
-	return `${siteConfig.registryUrl}/${name}.json`;
-}
-
+/**
+ * Generates a registry item from a config.json and its source directory
+ */
 function generateRegistry(
 	configPath: string,
 	sourceDir: string,
 ): RegistryItem {
 	// Read config.json
 	const config: ConfigJson = JSON.parse(readFileSync(configPath, "utf-8"));
+
+	// Get the appropriate builder for this registry
+	const builder = getBuilder(config.name);
 
 	// Get all TypeScript files in the directory
 	const allFiles = getAllTsFiles(sourceDir);
@@ -158,7 +68,7 @@ function generateRegistry(
 		path: relative(ROOT_DIR, filePath),
 		content: readFileSync(filePath, "utf-8"),
 		type: getFileType(filePath, sourceDir),
-		target: getTargetPath(filePath, sourceDir, config.name),
+		target: builder.getTargetPath(filePath, sourceDir, config.name),
 	}));
 
 	const item: RegistryItem = {
@@ -173,20 +83,12 @@ function generateRegistry(
 	};
 
 	if (config.registryDependencies && config.registryDependencies.length > 0) {
-		item.registryDependencies = config.registryDependencies.map(toRegistryUrl);
+		item.registryDependencies = config.registryDependencies.map((dep) =>
+			toRegistryUrl(dep, siteConfig.registryUrl),
+		);
 	}
 
 	return item;
-}
-
-function writeRegistryItem(item: RegistryItem) {
-	const outputPath = join(OUTPUT_DIR, `${item.name}.json`);
-	const content = JSON.stringify(item, null, 2);
-
-	mkdirSync(OUTPUT_DIR, { recursive: true });
-	writeFileSync(outputPath, content, "utf-8");
-
-	console.log(`✓ Generated ${item.name}.json (${item.files.length} files)`);
 }
 
 function main() {
