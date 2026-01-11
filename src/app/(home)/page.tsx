@@ -11,9 +11,11 @@ import {
 
 export default function HomePage() {
   const stats = [
-    { value: "Auth", label: "Available Now" },
-    { value: "100%", label: "Type Safe" },
+    { value: "Auth", label: "with your ORM" },
+    { value: "Internationalization", label: "with next-international" },
+    { value: "Payments", label: "Comming Soon" },
     { value: "More", label: "Coming Soon" },
+    
   ];
 
   const features = [
@@ -43,7 +45,7 @@ export default function HomePage() {
     },
   ];
 
-  const examples = [
+/*   const examples = [
     {
       name: "OTP Authentication",
       command: "npx shadcn@latest add https://initcn.dev/r/auth-otp-prisma",
@@ -62,7 +64,7 @@ export default function HomePage() {
       description: "Stripe integration with webhooks and subscription management",
       available: false,
     },
-  ];
+  ]; */
 
   return (
     <main className="flex flex-col">
@@ -122,7 +124,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="mx-auto max-w-3xl space-y-8">
+     {/*    <div className="mx-auto max-w-3xl space-y-8">
           {examples.map((example) => (
             <AnimatedSection key={example.name}>
               <div className={`rounded-lg border bg-fd-card p-6 space-y-3 ${!example.available ? "opacity-60" : ""}`}>
@@ -151,7 +153,7 @@ export default function HomePage() {
               </div>
             </AnimatedSection>
           ))}
-        </div>
+        </div> */}
       </AnimatedSectionScale>
 
       <AnimatedSection className="w-full py-24 md:py-32 bg-fd-secondary/30">
