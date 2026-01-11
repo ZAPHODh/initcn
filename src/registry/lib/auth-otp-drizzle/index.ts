@@ -53,4 +53,4 @@ export type {
 	SendOTPResponse,
 	VerifyOTPRequest,
 	VerifyOTPResponse,
-} from "@/lib/auth-otp-shared/types";
+} from "@/lib/server/auth/types";

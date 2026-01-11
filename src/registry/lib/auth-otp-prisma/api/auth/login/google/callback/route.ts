@@ -1,12 +1,12 @@
-import { google } from "@/lib/auth-otp-prisma/server/google";
+import { google } from "@/lib/server/auth/server/google";
 import { cookies } from "next/headers";
 import {
 	generateSessionToken,
 	createSession,
 	SESSION_COOKIE_NAME,
-} from "@/lib/auth-otp-prisma/server/session";
-import { setSessionTokenCookie } from "@/lib/auth-otp-shared/server/cookies";
-import { prisma } from "@/lib/auth-otp-prisma/db";
+} from "@/lib/server/auth/server/session";
+import { setSessionTokenCookie } from "@/lib/server/auth/server/cookies";
+import { prisma } from "@/lib/server/auth/db";
 import { OAuth2RequestError, ArcticFetchError } from "arctic";
 
 export async function GET(request: Request) {

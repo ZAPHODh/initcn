@@ -1,27 +1,27 @@
 import { revalidatePath } from "next/cache";
-import { db } from "@/lib/auth-otp-drizzle/db";
-import { users, verificationCodes } from "@/lib/auth-otp-drizzle/schemas/drizzle.schema";
+import { db } from "@/lib/server/auth/db";
+import { users, verificationCodes } from "@/lib/server/auth/schemas/drizzle.schema";
 import {
 	rateLimitByEmail,
 	rateLimitByIP,
 	trackFailedAttempt,
 	resetFailedAttempts,
-} from "@/lib/auth-otp-drizzle/rate-limit";
+} from "@/lib/server/auth/rate-limit";
 import {
 	generateSessionToken,
 	createSession,
 	SESSION_COOKIE_NAME,
-} from "@/lib/auth-otp-drizzle/server/session";
-import { isOTPExpired } from "@/lib/auth-otp-shared/server/otp";
+} from "@/lib/server/auth/server/session";
+import { isOTPExpired } from "@/lib/server/auth/server/otp";
 import {
 	extractClientIP,
 	normalizeEmail,
-} from "@/lib/auth-otp-shared/server/utils";
-import { setSessionTokenCookie } from "@/lib/auth-otp-shared/server/cookies";
+} from "@/lib/server/auth/server/utils";
+import { setSessionTokenCookie } from "@/lib/server/auth/server/cookies";
 import type {
 	VerifyOTPRequest,
 	VerifyOTPResponse,
-} from "@/lib/auth-otp-shared/types";
+} from "@/lib/server/auth/types";
 import { eq, desc } from "drizzle-orm";
 
 const MAX_FAILED_ATTEMPTS = 10;

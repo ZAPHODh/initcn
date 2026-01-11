@@ -1,8 +1,8 @@
 "use server";
 
-import { authActionClient } from "@/lib/auth-otp-drizzle/client/safe-action";
-import { deleteSessionTokenCookie } from "@/lib/auth-otp-shared/server/cookies";
-import { invalidateSession } from "@/lib/auth-otp-drizzle/server/session";
+import { authActionClient } from "@/lib/server/auth/client/safe-action";
+import { deleteSessionTokenCookie } from "@/lib/server/auth/server/cookies";
+import { invalidateSession } from "@/lib/server/auth/server/session";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 

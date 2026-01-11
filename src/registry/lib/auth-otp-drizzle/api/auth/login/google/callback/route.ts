@@ -1,13 +1,13 @@
-import { google } from "@/lib/auth-otp-drizzle/server/google";
+import { google } from "@/lib/server/auth/server/google";
 import { cookies } from "next/headers";
 import {
 	generateSessionToken,
 	createSession,
 	SESSION_COOKIE_NAME,
-} from "@/lib/auth-otp-drizzle/server/session";
-import { setSessionTokenCookie } from "@/lib/auth-otp-shared/server/cookies";
-import { db } from "@/lib/auth-otp-drizzle/db";
-import { users } from "@/lib/auth-otp-drizzle/schemas/drizzle.schema";
+} from "@/lib/server/auth/server/session";
+import { setSessionTokenCookie } from "@/lib/server/auth/server/cookies";
+import { db } from "@/lib/server/auth/db";
+import { users } from "@/lib/server/auth/schemas/drizzle.schema";
 import { eq } from "drizzle-orm";
 import { OAuth2RequestError, ArcticFetchError } from "arctic";
 

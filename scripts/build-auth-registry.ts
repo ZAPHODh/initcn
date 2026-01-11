@@ -59,7 +59,8 @@ function getAllTsFiles(dir: string): string[] {
 				walk(fullPath);
 			} else if (stat.isFile()) {
 				const ext = extname(item);
-				if (ext === ".ts" || ext === ".tsx") {
+				// Exclude index.ts files to avoid conflicts after path consolidation
+				if ((ext === ".ts" || ext === ".tsx") && item !== "index.ts") {
 					files.push(fullPath);
 				}
 			}
@@ -70,13 +71,8 @@ function getAllTsFiles(dir: string): string[] {
 	return files;
 }
 
-function getTargetPath(filePath: string, sourceDir: string, isShared = false): string {
+function getTargetPath(filePath: string, sourceDir: string): string {
 	const relativePath = relative(sourceDir, filePath);
-
-	// For shared files, everything goes to lib/auth-otp-shared/
-	if (isShared) {
-		return `lib/auth-otp-shared/${relativePath}`;
-	}
 
 	// API routes go to app/api/
 	if (relativePath.startsWith("api/")) {
@@ -99,12 +95,8 @@ function getTargetPath(filePath: string, sourceDir: string, isShared = false): s
 		return relativePath;
 	}
 
-	// Everything else goes to lib/auth-otp-prisma/ or lib/auth-otp-drizzle/
-	// Determine which based on sourceDir
-	const isDrizzle = sourceDir.includes("auth-otp-drizzle");
-	return isDrizzle
-		? `lib/auth-otp-drizzle/${relativePath}`
-		: `lib/auth-otp-prisma/${relativePath}`;
+	// Everything else (server code, db, actions, etc.) goes to lib/server/auth/
+	return `lib/server/auth/${relativePath}`;
 }
 
 function getFileType(
@@ -136,7 +128,6 @@ function generateRegistry(
 	dependencies: string[],
 	devDependencies: string[],
 	registryDependencies: string[] = [],
-	isShared = false,
 ): RegistryItem {
 	const allFiles = getAllTsFiles(sourceDir);
 
@@ -144,7 +135,7 @@ function generateRegistry(
 		path: relative(ROOT_DIR, filePath),
 		content: readFileSync(filePath, "utf-8"),
 		type: getFileType(filePath, sourceDir),
-		target: getTargetPath(filePath, sourceDir, isShared),
+		target: getTargetPath(filePath, sourceDir),
 	}));
 
 	const item: RegistryItem = {
@@ -194,7 +185,6 @@ function main() {
 			],
 			[],
 			["input-otp"],
-			true, // isShared
 		);
 		writeRegistryItem(sharedItem);
 	}
@@ -215,7 +205,6 @@ function main() {
 			],
 			["prisma"],
 			["auth-otp-shared"],
-			false,
 		);
 		writeRegistryItem(prismaItem);
 
@@ -242,7 +231,6 @@ function main() {
 			],
 			["drizzle-kit"],
 			["auth-otp-shared"],
-			false,
 		);
 		writeRegistryItem(drizzleItem);
 	}

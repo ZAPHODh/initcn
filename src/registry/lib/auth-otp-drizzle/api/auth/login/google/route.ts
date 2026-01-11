@@ -1,5 +1,5 @@
 import { generateCodeVerifier, generateState } from "arctic";
-import { google } from "@/lib/auth-otp-prisma/server/google";
+import { google } from "@/lib/server/auth/server/google";
 import { cookies } from "next/headers";
 
 export async function GET() {

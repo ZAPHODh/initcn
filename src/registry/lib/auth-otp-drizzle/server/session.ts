@@ -6,8 +6,8 @@ import {
 import { db } from "../db";
 import { sessions, users } from "../schemas/drizzle.schema";
 import { eq } from "drizzle-orm";
-import { getSessionTokenCookie } from "@/lib/auth-otp-shared/server/cookies";
-import type { SessionValidationResult } from "@/lib/auth-otp-shared/types";
+import { getSessionTokenCookie } from "@/lib/server/auth/server/cookies";
+import type { SessionValidationResult } from "@/lib/server/auth/types";
 
 export const SESSION_EXPIRY_DAYS = 30;
 export const SESSION_RENEWAL_THRESHOLD_DAYS = 15;

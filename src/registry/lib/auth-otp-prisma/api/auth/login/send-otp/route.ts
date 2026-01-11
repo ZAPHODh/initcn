@@ -1,19 +1,19 @@
-import { prisma } from "@/lib/auth-otp-prisma/db";
-import { sendOTP } from "@/lib/auth-otp-prisma/mail";
+import { prisma } from "@/lib/server/auth/db";
+import { sendOTP } from "@/lib/server/auth/mail";
 import {
 	rateLimitByEmail,
 	rateLimitByIP,
-} from "@/lib/auth-otp-prisma/rate-limit";
-import { generateOTP, getOTPExpiry } from "@/lib/auth-otp-shared/server/otp";
+} from "@/lib/server/auth/rate-limit";
+import { generateOTP, getOTPExpiry } from "@/lib/server/auth/server/otp";
 import {
 	validateEmail,
 	extractClientIP,
 	normalizeEmail,
-} from "@/lib/auth-otp-shared/server/utils";
+} from "@/lib/server/auth/server/utils";
 import type {
 	SendOTPRequest,
 	SendOTPResponse,
-} from "@/lib/auth-otp-shared/types";
+} from "@/lib/server/auth/types";
 
 const OTP_LENGTH = 6;
 const OTP_EXPIRY_MINUTES = 3;

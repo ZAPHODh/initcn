@@ -1,20 +1,20 @@
-import { db } from "@/lib/auth-otp-drizzle/db";
-import { users, verificationCodes } from "@/lib/auth-otp-drizzle/schemas/drizzle.schema";
-import { sendOTP } from "@/lib/auth-otp-drizzle/mail";
+import { db } from "@/lib/server/auth/db";
+import { users, verificationCodes } from "@/lib/server/auth/schemas/drizzle.schema";
+import { sendOTP } from "@/lib/server/auth/mail";
 import {
 	rateLimitByEmail,
 	rateLimitByIP,
-} from "@/lib/auth-otp-drizzle/rate-limit";
-import { generateOTP, getOTPExpiry } from "@/lib/auth-otp-shared/server/otp";
+} from "@/lib/server/auth/rate-limit";
+import { generateOTP, getOTPExpiry } from "@/lib/server/auth/server/otp";
 import {
 	validateEmail,
 	extractClientIP,
 	normalizeEmail,
-} from "@/lib/auth-otp-shared/server/utils";
+} from "@/lib/server/auth/server/utils";
 import type {
 	SendOTPRequest,
 	SendOTPResponse,
-} from "@/lib/auth-otp-shared/types";
+} from "@/lib/server/auth/types";
 import { eq } from "drizzle-orm";
 
 const OTP_LENGTH = 6;

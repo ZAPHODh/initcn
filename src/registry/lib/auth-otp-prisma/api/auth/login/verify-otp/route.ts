@@ -1,26 +1,26 @@
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/auth-otp-prisma/db";
+import { prisma } from "@/lib/server/auth/db";
 import {
 	rateLimitByEmail,
 	rateLimitByIP,
 	trackFailedAttempt,
 	resetFailedAttempts,
-} from "@/lib/auth-otp-prisma/rate-limit";
+} from "@/lib/server/auth/rate-limit";
 import {
 	generateSessionToken,
 	createSession,
 	SESSION_COOKIE_NAME,
-} from "@/lib/auth-otp-prisma/server/session";
-import { isOTPExpired } from "@/lib/auth-otp-shared/server/otp";
+} from "@/lib/server/auth/server/session";
+import { isOTPExpired } from "@/lib/server/auth/server/otp";
 import {
 	extractClientIP,
 	normalizeEmail,
-} from "@/lib/auth-otp-shared/server/utils";
-import { setSessionTokenCookie } from "@/lib/auth-otp-shared/server/cookies";
+} from "@/lib/server/auth/server/utils";
+import { setSessionTokenCookie } from "@/lib/server/auth/server/cookies";
 import type {
 	VerifyOTPRequest,
 	VerifyOTPResponse,
-} from "@/lib/auth-otp-shared/types";
+} from "@/lib/server/auth/types";
 
 const MAX_FAILED_ATTEMPTS = 10;
 const FAILED_ATTEMPTS_WINDOW_SECONDS = 3600;
