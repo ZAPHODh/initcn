@@ -1,0 +1,321 @@
+---
+title: Auth OTP with Drizzle
+description: Complete guide for using auth-otp with Drizzle ORM
+---
+
+# Auth OTP with Drizzle
+
+Complete, production-ready authentication using OTP and Google OAuth with Drizzle ORM. Install with one command and start authenticating users.
+
+## Installation
+
+<Steps>
+
+### Install from registry
+
+<Tabs items={["npm", "pnpm", "yarn", "bun"]}>
+  <Tab value="npm">
+  ```bash
+  npx shadcn@latest add https://initcn.vercel.app/r/auth-otp-drizzle.json
+  ```
+  </Tab>
+
+  <Tab value="pnpm">
+  ```bash
+  pnpm dlx shadcn@latest add https://initcn.vercel.app/r/auth-otp-drizzle.json
+  ```
+  </Tab>
+
+  <Tab value="yarn">
+  ```bash
+  yarn dlx shadcn@latest add https://initcn.vercel.app/r/auth-otp-drizzle.json
+  ```
+  </Tab>
+
+  <Tab value="bun">
+  ```bash
+  bunx --bun shadcn@latest add https://initcn.vercel.app/r/auth-otp-drizzle.json
+  ```
+  </Tab>
+</Tabs>
+
+This installs:
+- **auth-otp-shared** (auto-installed) - UI components, utilities, types
+- **auth-otp-drizzle** - Database operations, email, rate limiting, OAuth, routes, pages
+
+### Set up database
+
+Copy the Drizzle schema from `lib/auth-otp-drizzle/schemas/drizzle.schema.ts` to your schema file:
+
+```ts
+import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+
+// User table
+export const users = pgTable("user", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  email: text("email").unique().notNull(),
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  name: text("name"),
+  picture: text("picture"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Session table
+export const sessions = pgTable(
+  "session",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at").notNull(),
+  },
+  (table) => ({
+    userIdIdx: index("session_user_id_idx").on(table.userId),
+  }),
+);
+
+// Verification code table
+export const verificationCodes = pgTable(
+  "verification_code",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    code: text("code").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdIdx: index("verification_code_user_id_idx").on(table.userId),
+    emailIdx: index("verification_code_email_idx").on(table.email),
+  }),
+);
+
+// Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  sessions: many(sessions),
+  verificationCodes: many(verificationCodes),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const verificationCodesRelations = relations(
+  verificationCodes,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [verificationCodes.userId],
+      references: [users.id],
+    }),
+  }),
+);
+```
+
+Then run migrations:
+
+```bash
+npx drizzle-kit generate
+npx drizzle-kit migrate
+```
+
+### Configure environment variables
+
+Create `.env.local`:
+
+```bash
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/mydb"
+
+# Resend (optional in dev - uses console.log)
+RESEND_API_KEY="re_..."
+AUTH_EMAIL_FROM="Auth <auth@yourdomain.com>"
+
+# Upstash Redis (optional in dev - uses in-memory)
+UPSTASH_REDIS_REST_URL="https://..."
+UPSTASH_REDIS_REST_TOKEN="..."
+
+# Google OAuth
+GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="your-client-secret"
+GOOGLE_REDIRECT_URI="http://localhost:3000/api/auth/login/google/callback"
+```
+
+<Callout type="info">
+**Development mode:** Set `NODE_ENV=development` and the system automatically:
+- Uses console.log for emails (no Resend needed)
+- Uses in-memory storage for rate limiting (no Redis needed)
+
+Just set `DATABASE_URL` and `GOOGLE_*` variables to get started!
+</Callout>
+
+### Set up Google OAuth (optional)
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing
+3. Enable Google+ API
+4. Create OAuth 2.0 Client ID credentials
+5. Add redirect URI: `http://localhost:3000/api/auth/login/google/callback`
+6. Copy Client ID and Secret to `.env.local`
+
+### Done!
+
+Navigate to `/login` to test authentication. The system includes:
+
+- ✅ API routes at `/api/auth/login/*`
+- ✅ Login page at `/login`
+- ✅ Modal login interceptor
+- ✅ Session management
+- ✅ Logout action
+
+</Steps>
+
+---
+
+## Usage
+
+### Protect a page
+
+```tsx
+import { getCurrentSession } from "@/lib/auth-otp-drizzle";
+import { redirect } from "next/navigation";
+
+export default async function DashboardPage() {
+  const { user, session } = await getCurrentSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  return (
+    <div>
+      <h1>Dashboard</h1>
+      <p>Hello {user.email}</p>
+      {user.name && <p>Welcome back, {user.name}!</p>}
+    </div>
+  );
+}
+```
+
+### Protect a server action
+
+```tsx
+"use server";
+
+import { authActionClient } from "@/lib/auth-otp-drizzle";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+
+const schema = z.object({
+  title: z.string().min(1),
+  content: z.string(),
+});
+
+export const createPost = authActionClient
+  .schema(schema)
+  .action(async ({ ctx, parsedInput }) => {
+    // ctx.user, ctx.userId, ctx.sessionId are automatically available
+    // Action only runs if user is authenticated
+
+    const post = await db.insert(posts).values({
+      ...parsedInput,
+      authorId: ctx.userId,
+    }).returning();
+
+    revalidatePath("/posts");
+    return { post: post[0] };
+  });
+```
+
+### Manual session validation
+
+```tsx
+import { validateSessionToken } from "@/lib/auth-otp-drizzle";
+
+export async function GET(request: Request) {
+  const token = request.cookies.get("session")?.value;
+
+  if (!token) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { user, session } = await validateSessionToken(token);
+
+  if (!session) {
+    return Response.json({ error: "Invalid session" }, { status: 401 });
+  }
+
+  return Response.json({ user });
+}
+```
+
+### Logout user
+
+```tsx
+"use client";
+
+import { logout } from "@/lib/auth-otp-drizzle";
+import { useAction } from "next-safe-action/hooks";
+import { Button } from "@/components/ui/button";
+
+export function LogoutButton() {
+  const { execute, isExecuting } = useAction(logout);
+
+  return (
+    <Button onClick={() => execute()} disabled={isExecuting}>
+      {isExecuting ? "Logging out..." : "Logout"}
+    </Button>
+  );
+}
+```
+
+---
+
+## Customization
+
+All customization options are the same as the Prisma variant. See the [Prisma guide](/docs/auth/prisma#customization) for details on:
+
+- Changing email templates
+- Adjusting rate limits
+- Modifying session expiry
+- Adding more OAuth providers
+
+---
+
+## API Reference
+
+The API is identical to the Prisma variant. All functions and types are the same:
+
+### Session Management
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `getCurrentSession()` | Get current session from cookies (server-side) | `Promise<SessionValidationResult>` |
+| `validateSessionToken(token)` | Validate and renew session token | `Promise<SessionValidationResult>` |
+| `createSession(token, userId)` | Create new session for user | `Promise<Session>` |
+| `invalidateSession(sessionId)` | Delete session by ID | `Promise<void>` |
+| `invalidateAllUserSessions(userId)` | Delete all sessions for user | `Promise<void>` |
+| `generateSessionToken()` | Generate cryptographically secure token | `string` |
+
+For complete API documentation, see the [Prisma guide's API reference](/docs/auth/prisma#api-reference).
+
+---
+
+## Troubleshooting
+
+Troubleshooting is the same as the Prisma variant. See the [Prisma guide troubleshooting section](/docs/auth/prisma#troubleshooting) for help with:
+
+- OTP emails not sending
+- Rate limiting issues
+- Google OAuth errors
+- Session persistence problems
+- TypeScript errors
+- Build errors

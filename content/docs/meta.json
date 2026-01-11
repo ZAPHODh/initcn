@@ -1,0 +1,10 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "---Authentication---",
+    "auth",
+    "auth/prisma",
+    "auth/drizzle"
+  ]
+}

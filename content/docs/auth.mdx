@@ -1,0 +1,110 @@
+---
+title: Authentication with OTP
+description: Production-ready OTP authentication for Next.js applications
+---
+
+# Why?
+
+Secure, passwordless authentication using one-time passwords (OTP) sent via email. Choose your database and with one command, start authenticating users.
+
+## Choose Your Database
+
+<Cards>
+  <Card title="Prisma" href="/docs/auth/prisma">
+    Complete guide for using auth-otp with Prisma ORM
+  </Card>
+  <Card title="Drizzle" href="/docs/auth/drizzle">
+    Complete guide for using auth-otp with Drizzle ORM
+  </Card>
+</Cards>
+
+## Overview
+
+**auth-otp** provides a complete, production-ready authentication solution with **Passwordless OTP**, **Google OAuth**, **Rate limiting**, and **Type-safety**.
+
+## What You Need to Do
+
+After installing the CLI command, you'll need to:
+
+### 1. Add Login Dialog to Your Layout
+
+Update your root layout to include dialog, for interpecpted routes.
+
+```tsx
+import type { ReactNode } from "react";
+//your root layout
+export default function Layout({
+  children,
+  //receive the modal as prop
+  modal,
+}: {
+  children: ReactNode;
+  modal: ReactNode;
+}) {
+  return (
+    <>
+      {children}
+      //then put it here
+      {modal}
+    </>
+  );
+}
+
+```
+
+### 2. Update Your Database Schema
+
+Add the required tables to your database. The schema includes tables for users, sessions, and verification codes.
+
+<Cards>
+  <Card title="Prisma Schema" href="/docs/auth/prisma#database-schema">
+    View the Prisma schema and migration commands
+  </Card>
+  <Card title="Drizzle Schema" href="/docs/auth/drizzle#database-schema">
+    View the Drizzle schema and migration commands
+  </Card>
+</Cards>
+
+### 3. Configure Environment Variables
+
+Set up your environment variables for email service (Resend), rate limiting (Upstash Redis), and OAuth (Google):
+
+```bash title=".env.local"
+DATABASE_URL="postgresql://..."
+
+# Resend (email service)
+RESEND_API_KEY="re_..."
+
+# Upstash Redis (rate limiting)
+UPSTASH_REDIS_REST_URL="https://..."
+UPSTASH_REDIS_REST_TOKEN="..."
+
+# Google OAuth
+GOOGLE_CLIENT_ID="..."
+GOOGLE_CLIENT_SECRET="..."
+GOOGLE_REDIRECT_URI="http://localhost:3000/api/auth/login/google/callback"
+```
+
+### 4. Start Using Authentication
+
+Protect pages and server actions with the provided utilities:
+
+```tsx
+import { getCurrentSession } from "@/lib/auth-otp-prisma"; // or auth-otp-drizzle
+import { redirect } from "next/navigation";
+
+export default async function DashboardPage() {
+  const { user, session } = await getCurrentSession();
+
+  if (!session) redirect("/login");
+
+  return <div>Hello {user.email}</div>;
+}
+```
+
+## Get Started
+
+Pick your database and follow the complete guide:
+
+- [Prisma Guide](/docs/auth/prisma) - Installation, setup, usage, and API reference
+- [Drizzle Guide](/docs/auth/drizzle) - Installation, setup, usage, and API reference

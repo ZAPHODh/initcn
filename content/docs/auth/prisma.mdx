@@ -1,0 +1,490 @@
+---
+title: Auth OTP with Prisma
+description: Complete guide for using auth-otp with Prisma ORM
+---
+
+# Auth OTP with Prisma
+
+Complete, production-ready authentication using OTP and Google OAuth with Prisma ORM. Install with one command and start authenticating users.
+
+## Installation
+
+<Steps>
+
+### Install from registry
+
+<Tabs items={["npm", "pnpm", "yarn", "bun"]}>
+  <Tab value="npm">
+  ```bash
+  npx shadcn@latest add https://initcn.vercel.app/r/auth-otp-prisma.json
+  ```
+  </Tab>
+
+  <Tab value="pnpm">
+  ```bash
+  pnpm dlx shadcn@latest add https://initcn.vercel.app/r/auth-otp-prisma.json
+  ```
+  </Tab>
+
+  <Tab value="yarn">
+  ```bash
+  yarn dlx shadcn@latest add https://initcn.vercel.app/r/auth-otp-prisma.json
+  ```
+  </Tab>
+
+  <Tab value="bun">
+  ```bash
+  bunx --bun shadcn@latest add https://initcn.vercel.app/r/auth-otp-prisma.json
+  ```
+  </Tab>
+</Tabs>
+
+This installs:
+- **auth-otp-shared** (auto-installed) - UI components, utilities, types
+- **auth-otp-prisma** - Database operations, email, rate limiting, OAuth, routes, pages
+
+### Set up database
+
+Copy the Prisma schema from `lib/auth-otp-prisma/schemas/prisma.schema` to your `prisma/schema.prisma`:
+
+```prisma
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  picture       String?
+  emailVerified Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  verificationCodes VerificationCode[]
+  sessions          Session[]
+}
+
+model VerificationCode {
+  id        String   @id @default(cuid())
+  userId    String
+  email     String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([email])
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+```
+
+Then run:
+
+```bash
+npx prisma generate
+npx prisma db push
+```
+
+### Configure environment variables
+
+Create `.env.local`:
+
+```bash
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/mydb"
+
+# Resend (optional in dev - uses console.log)
+RESEND_API_KEY="re_..."
+AUTH_EMAIL_FROM="Auth <auth@yourdomain.com>"
+
+# Upstash Redis (optional in dev - uses in-memory)
+UPSTASH_REDIS_REST_URL="https://..."
+UPSTASH_REDIS_REST_TOKEN="..."
+
+# Google OAuth
+GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="your-client-secret"
+GOOGLE_REDIRECT_URI="http://localhost:3000/api/auth/login/google/callback"
+```
+
+<Callout type="info">
+**Development mode:** Set `NODE_ENV=development` and the system automatically:
+- Uses console.log for emails (no Resend needed)
+- Uses in-memory storage for rate limiting (no Redis needed)
+
+Just set `DATABASE_URL` and `GOOGLE_*` variables to get started!
+</Callout>
+
+### Set up Google OAuth (optional)
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing
+3. Enable Google+ API
+4. Create OAuth 2.0 Client ID credentials
+5. Add redirect URI: `http://localhost:3000/api/auth/login/google/callback`
+6. Copy Client ID and Secret to `.env.local`
+
+### Done!
+
+Navigate to `/login` to test authentication. The system includes:
+
+- ✅ API routes at `/api/auth/login/*`
+- ✅ Login page at `/login`
+- ✅ Modal login interceptor
+- ✅ Session management
+- ✅ Logout action
+
+</Steps>
+
+---
+
+## Usage
+
+### Protect a page
+
+```tsx
+import { getCurrentSession } from "@/lib/auth-otp-prisma";
+import { redirect } from "next/navigation";
+
+export default async function DashboardPage() {
+  const { user, session } = await getCurrentSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  return (
+    <div>
+      <h1>Dashboard</h1>
+      <p>Hello {user.email}</p>
+      {user.name && <p>Welcome back, {user.name}!</p>}
+    </div>
+  );
+}
+```
+
+### Protect a server action
+
+```tsx
+"use server";
+
+import { authActionClient } from "@/lib/auth-otp-prisma";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+
+const schema = z.object({
+  title: z.string().min(1),
+  content: z.string(),
+});
+
+export const createPost = authActionClient
+  .schema(schema)
+  .action(async ({ ctx, parsedInput }) => {
+    // ctx.user, ctx.userId, ctx.sessionId are automatically available
+    // Action only runs if user is authenticated
+
+    const post = await prisma.post.create({
+      data: {
+        ...parsedInput,
+        authorId: ctx.userId,
+      },
+    });
+
+    revalidatePath("/posts");
+    return { post };
+  });
+```
+
+### Manual session validation
+
+```tsx
+import { validateSessionToken } from "@/lib/auth-otp-prisma";
+
+export async function GET(request: Request) {
+  const token = request.cookies.get("session")?.value;
+
+  if (!token) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { user, session } = await validateSessionToken(token);
+
+  if (!session) {
+    return Response.json({ error: "Invalid session" }, { status: 401 });
+  }
+
+  return Response.json({ user });
+}
+```
+
+### Logout user
+
+```tsx
+"use client";
+
+import { logout } from "@/lib/auth-otp-prisma";
+import { useAction } from "next-safe-action/hooks";
+import { Button } from "@/components/ui/button";
+
+export function LogoutButton() {
+  const { execute, isExecuting } = useAction(logout);
+
+  return (
+    <Button onClick={() => execute()} disabled={isExecuting}>
+      {isExecuting ? "Logging out..." : "Logout"}
+    </Button>
+  );
+}
+```
+
+### Get current user in client component
+
+```tsx
+"use client";
+
+import { useEffect, useState } from "react";
+import type { User } from "@/lib/auth-otp-shared/types";
+
+export function UserProfile() {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    fetch("/api/user")
+      .then((res) => res.json())
+      .then(setUser);
+  }, []);
+
+  if (!user) return <div>Loading...</div>;
+
+  return (
+    <div>
+      <p>{user.email}</p>
+      {user.picture && <img src={user.picture} alt={user.name || "User"} />}
+    </div>
+  );
+}
+```
+
+---
+
+## Customization
+
+### Change email template
+
+Edit `emails/otp-email.tsx` to customize the OTP email:
+
+```tsx
+import { Html, Head, Body, Container, Text, Button } from "@react-email/components";
+
+export default function OTPEmail({ code, userName }: { code: string; userName?: string }) {
+  return (
+    <Html>
+      <Head />
+      <Body>
+        <Container>
+          <Text>Hi {userName || "there"}!</Text>
+          <Text>Your verification code is:</Text>
+          <Text style={{ fontSize: 32, fontWeight: "bold" }}>{code}</Text>
+          <Text>This code will expire in 3 minutes.</Text>
+        </Container>
+      </Body>
+    </Html>
+  );
+}
+```
+
+### Adjust rate limits
+
+Edit constants in the API route files:
+
+```ts
+// api/auth/login/send-otp/route.ts
+const OTP_LENGTH = 6;
+const OTP_EXPIRY_MINUTES = 3;
+const EMAIL_RATE_LIMIT = { requests: 3, window: "15 m" as const };
+const IP_RATE_LIMIT = { requests: 20, window: "15 m" as const };
+```
+
+```ts
+// api/auth/login/verify-otp/route.ts
+const MAX_FAILED_ATTEMPTS = 10;
+const FAILED_ATTEMPTS_WINDOW_SECONDS = 3600;
+const EMAIL_RATE_LIMIT = { requests: 10, window: "15 m" as const };
+const IP_RATE_LIMIT = { requests: 50, window: "15 m" as const };
+```
+
+### Modify session expiry
+
+Edit `lib/auth-otp-prisma/server/session.ts`:
+
+```ts
+export const SESSION_EXPIRY_DAYS = 30;           // Sessions last 30 days
+export const SESSION_RENEWAL_THRESHOLD_DAYS = 15; // Renew if < 15 days left
+export const SESSION_COOKIE_NAME = "session";    // Cookie name
+```
+
+### Change redirect after login
+
+Edit the callback route at `api/auth/login/google/callback/route.ts`:
+
+```ts
+// Change this line:
+return Response.redirect(new URL("/dashboard", request.url));
+
+// To redirect elsewhere:
+return Response.redirect(new URL("/your-path", request.url));
+```
+
+### Add more OAuth providers
+
+The system supports any OAuth provider via [Arctic](https://arctic.js.org). Add new providers:
+
+1. Install Arctic provider (if needed)
+2. Create provider setup in `lib/auth-otp-prisma/server/`
+3. Create route handlers in `api/auth/login/[provider]/`
+
+Example for GitHub:
+
+```ts
+// lib/auth-otp-prisma/server/github.ts
+import { GitHub } from "arctic";
+
+export const github = new GitHub(
+  process.env.GITHUB_CLIENT_ID!,
+  process.env.GITHUB_CLIENT_SECRET!,
+  process.env.GITHUB_REDIRECT_URI!
+);
+```
+
+---
+
+## API Reference
+
+### Session Management
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `getCurrentSession()` | Get current session from cookies (server-side) | `Promise<SessionValidationResult>` |
+| `validateSessionToken(token)` | Validate and renew session token | `Promise<SessionValidationResult>` |
+| `createSession(token, userId)` | Create new session for user | `Promise<Session>` |
+| `invalidateSession(sessionId)` | Delete session by ID | `Promise<void>` |
+| `invalidateAllUserSessions(userId)` | Delete all sessions for user | `Promise<void>` |
+| `generateSessionToken()` | Generate cryptographically secure token | `string` |
+
+### Database Operations
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `prisma` | Prisma client instance | `PrismaClient` |
+
+### Email Service
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `sendOTP({ to, code, userName })` | Send OTP email (console in dev) | `Promise<void>` |
+
+### Rate Limiting
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `rateLimitByEmail(email, requests, window)` | Check rate limit by email | `Promise<RateLimitResult>` |
+| `rateLimitByIP(ip, requests, window)` | Check rate limit by IP | `Promise<RateLimitResult>` |
+| `trackFailedAttempt(key, max, windowSec)` | Track failed verification attempt | `Promise<FailedAttemptResult>` |
+| `resetFailedAttempts(key)` | Reset failed attempt counter | `Promise<void>` |
+
+### OTP Utilities (from shared)
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `generateOTP(length)` | Generate random numeric OTP | `string` |
+| `getOTPExpiry(minutes)` | Get expiry date for OTP | `Date` |
+| `isOTPExpired(expiresAt)` | Check if OTP has expired | `boolean` |
+
+### Cookie Utilities (from shared)
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `setSessionTokenCookie(token, expiresAt, name)` | Set session cookie | `Promise<void>` |
+| `getSessionTokenCookie(name)` | Get session cookie value | `Promise<string \| undefined>` |
+| `deleteSessionTokenCookie()` | Delete session cookie | `Promise<void>` |
+
+### Validation Utilities (from shared)
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `validateEmail(email)` | Validate email format | `boolean` |
+| `normalizeEmail(email)` | Normalize email to lowercase | `string` |
+| `extractClientIP(request)` | Extract client IP from request | `string` |
+
+### Types
+
+```typescript
+interface User {
+  id: string;
+  email: string;
+  name: string | null;
+  picture: string | null;
+  emailVerified: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface Session {
+  id: string;
+  userId: string;
+  expiresAt: Date;
+}
+
+interface SessionValidationResult {
+  session: Session | null;
+  user: User | null;
+}
+
+interface VerificationCode {
+  id: string;
+  userId: string;
+  email: string;
+  code: string;
+  expiresAt: Date;
+  createdAt: Date;
+}
+```
+
+---
+
+## Troubleshooting
+
+**OTP emails not sending in production:**
+- Verify `RESEND_API_KEY` is set correctly
+- Check `AUTH_EMAIL_FROM` matches your verified Resend domain
+- Check Resend dashboard for error logs
+
+**Rate limiting not working:**
+- Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
+- In development, in-memory fallback is used automatically
+
+**Google OAuth redirect error:**
+- Ensure `GOOGLE_REDIRECT_URI` matches callback URL in Google Console
+- Check redirect URI is added to authorized URIs in Google Console
+- Verify `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are correct
+
+**Session not persisting:**
+- Check cookies are enabled in browser
+- Verify `secure` cookie flag matches environment (disabled in dev)
+- Ensure database connection is working
+
+**TypeScript errors:**
+- Run `npx prisma generate` to generate Prisma types
+- Restart TypeScript server in your IDE
+
+**Build errors:**
+- Ensure all dependencies are installed
+- Check for import path errors (`@/lib/auth-otp-prisma` vs `@/lib/auth-otp-shared`)
