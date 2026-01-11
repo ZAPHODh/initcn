@@ -66,8 +66,7 @@ export default function HomePage() {
 
   return (
     <main className="flex flex-col">
-      {/* Hero Section */}
-      <section className="container py-24 md:py-32 lg:py-40">
+      <section className="mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 lg:py-40">
         <AnimatedHero className="mx-auto max-w-4xl text-center space-y-8">
           <AnimatedFadeUp>
             <div className="inline-flex items-center gap-2 rounded-full border bg-fd-secondary/50 px-4 py-1.5 text-sm text-fd-muted-foreground">
@@ -109,13 +108,11 @@ export default function HomePage() {
         </AnimatedHero>
       </section>
 
-      {/* Stats Section */}
-      <AnimatedSection className="container py-16 md:py-20">
+      <AnimatedSection className="mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
         <AnimatedStats stats={stats} />
       </AnimatedSection>
 
-      {/* How It Works */}
-      <AnimatedSectionScale className="container py-24 md:py-32">
+      <AnimatedSectionScale className="mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
         <div className="mx-auto max-w-3xl text-center space-y-4 mb-16">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
             One command to rule them all
@@ -157,9 +154,9 @@ export default function HomePage() {
         </div>
       </AnimatedSectionScale>
 
-      {/* Features Grid */}
-      <AnimatedSection className="container py-24 md:py-32 bg-fd-secondary/30">
-        <div className="mx-auto max-w-3xl text-center space-y-4 mb-16">
+      <AnimatedSection className="w-full py-24 md:py-32 bg-fd-secondary/30">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center space-y-4 mb-16">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
             Why initcn?
           </h2>
@@ -168,23 +165,23 @@ export default function HomePage() {
           </p>
         </div>
 
-        <AnimatedStaggerSection className="grid gap-8 sm:grid-cols-2 max-w-5xl mx-auto">
-          {features.map((feature) => (
-            <AnimatedFadeUp key={feature.title}>
-              <div className="rounded-lg border bg-fd-card p-6 space-y-3 h-full hover:border-fd-primary/50 transition-colors">
-                <div className="rounded-md bg-fd-primary/10 w-12 h-12 flex items-center justify-center">
-                  <feature.icon className="size-6 text-fd-primary" />
+          <AnimatedStaggerSection className="grid gap-8 sm:grid-cols-2 max-w-5xl mx-auto">
+            {features.map((feature) => (
+              <AnimatedFadeUp key={feature.title}>
+                <div className="rounded-lg border bg-fd-card p-6 space-y-3 h-full hover:border-fd-primary/50 transition-colors">
+                  <div className="rounded-md bg-fd-primary/10 w-12 h-12 flex items-center justify-center">
+                    <feature.icon className="size-6 text-fd-primary" />
+                  </div>
+                  <h3 className="font-semibold text-xl">{feature.title}</h3>
+                  <p className="text-fd-muted-foreground">{feature.description}</p>
                 </div>
-                <h3 className="font-semibold text-xl">{feature.title}</h3>
-                <p className="text-fd-muted-foreground">{feature.description}</p>
-              </div>
-            </AnimatedFadeUp>
-          ))}
-        </AnimatedStaggerSection>
+              </AnimatedFadeUp>
+            ))}
+          </AnimatedStaggerSection>
+        </div>
       </AnimatedSection>
 
-      {/* CTA Section */}
-      <AnimatedSectionScale className="container py-24 md:py-32">
+      <AnimatedSectionScale className="mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
         <div className="mx-auto max-w-3xl text-center space-y-8 rounded-2xl border bg-gradient-to-b from-fd-secondary/50 to-fd-secondary/20 p-12 md:p-16">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
             Ready to ship faster?
