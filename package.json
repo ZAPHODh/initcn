@@ -13,7 +13,7 @@
     "format": "biome format --write",
     "typecheck": "next typegen && tsc --noEmit",
     "test:registry": "node scripts/test-registry.js",
-    "build:registry": "fumadocs-registry && tsx scripts/build-auth-registry.ts"
+    "build:registry": "tsx scripts/build-auth-registry.ts"
   },
   "dependencies": {
     "@oslojs/crypto": "^1.0.1",

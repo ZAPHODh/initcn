@@ -1,11 +1,10 @@
 import type { PluginOptions } from "fumadocs-registry";
-import { siteConfig } from "./src/config/site.js";
 
 export default {
-  baseUrl: siteConfig.registryUrl,
+  baseUrl: "https://initcn.vercel.app/r",
   registry: {
-    name: siteConfig.name,
-    homepage: siteConfig.url,
+    name: "initcn",
+    homepage: "https://initcn.vercel.app",
   },
   componentsDirs: [
     { name: "lib", type: "lib" },
