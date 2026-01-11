@@ -79,7 +79,7 @@ function getAllTsFiles(dir: string): string[] {
 	return files;
 }
 
-function getTargetPath(filePath: string, sourceDir: string): string {
+function getTargetPath(filePath: string, sourceDir: string, registryName: string): string {
 	const relativePath = relative(sourceDir, filePath);
 
 	// API routes go to app/api/
@@ -103,8 +103,21 @@ function getTargetPath(filePath: string, sourceDir: string): string {
 		return relativePath;
 	}
 
-	// Everything else (server code, db, actions, etc.) goes to lib/server/auth/
-	return `lib/server/auth/${relativePath}`;
+	// Middleware at root goes to root
+	if (relativePath === "middleware.ts") {
+		return "middleware.ts";
+	}
+
+	// Determine subdirectory based on registry name
+	// auth-* registries go to lib/server/auth/
+	// i18n-* registries go to lib/server/i18n/
+	let subDir = "auth"; // default for backward compatibility
+	if (registryName.startsWith("i18n-")) {
+		subDir = "i18n";
+	}
+
+	// Everything else (server code, db, actions, etc.) goes to lib/server/{subDir}/
+	return `lib/server/${subDir}/${relativePath}`;
 }
 
 function getFileType(
@@ -145,7 +158,7 @@ function generateRegistry(
 		path: relative(ROOT_DIR, filePath),
 		content: readFileSync(filePath, "utf-8"),
 		type: getFileType(filePath, sourceDir),
-		target: getTargetPath(filePath, sourceDir),
+		target: getTargetPath(filePath, sourceDir, config.name),
 	}));
 
 	const item: RegistryItem = {

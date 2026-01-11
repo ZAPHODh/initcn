@@ -1,0 +1,8 @@
+{
+  "name": "i18n-next-international",
+  "type": "registry:lib",
+  "title": "Internationalization (next-international)",
+  "description": "Type-safe internationalization with next-international for Next.js App Router. Supports server and client components with namespace-based organization.",
+  "dependencies": ["next-international"],
+  "registryDependencies": []
+}

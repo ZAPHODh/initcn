@@ -5,6 +5,8 @@
     "---Authentication---",
     "auth",
     "auth/prisma",
-    "auth/drizzle"
+    "auth/drizzle",
+    "---Internationalization---",
+    "i18n"
   ]
 }

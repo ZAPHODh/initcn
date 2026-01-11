@@ -52,9 +52,9 @@ export default function HomePage() {
     },
     {
       name: "Internationalization",
-      command: "npx shadcn@latest add https://initcn.dev/r/i18n-next-intl",
-      description: "Full i18n setup with next-intl and middleware configuration",
-      available: false,
+      command: "npx shadcn@latest add https://initcn.dev/r/i18n-next-international",
+      description: "Type-safe i18n with next-international, Server Components support, and automatic routing",
+      available: true,
     },
     {
       name: "Payment Integration",
