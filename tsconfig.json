@@ -34,9 +34,6 @@
   ],
   "exclude": [
     "node_modules",
-    "src/registry/lib/auth-otp",
-    "src/registry/lib/auth-otp-shared",
-    "src/registry/lib/auth-otp-prisma",
-    "src/registry/lib/auth-otp-drizzle"
+    "src/registry/infra"
   ]
 }
