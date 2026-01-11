@@ -1,4 +1,3 @@
-// Drizzle-specific exports
 export { db } from "./db";
 export { sendOTP } from "./mail";
 export {
@@ -28,7 +27,6 @@ export { logout } from "./actions/logout";
 
 export { actionClient, authActionClient } from "./client/safe-action";
 
-// Re-export shared utilities and components
 export {
 	generateOTP,
 	getOTPExpiry,

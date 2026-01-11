@@ -90,7 +90,6 @@ export async function validateSessionToken(
 		return { session: null, user: null };
 	}
 
-	// Renew session if expiring soon
 	if (
 		isSessionExpiringSoon(session.expiresAt, SESSION_RENEWAL_THRESHOLD_DAYS)
 	) {
