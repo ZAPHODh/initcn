@@ -47,11 +47,10 @@ Complete, production-ready internationalization using `next-international`. Type
 ```bash
 # Move all routes except layout, api, and globals.css
 app/
-├── layout.tsx          # Keep at root
+├── layout.tsx          # Move to [locale]/layout.tsx
 ├── globals.css         # Keep at root
 ├── api/                # Keep at root
 ├── page.tsx            # Move to [locale]/page.tsx
-├── dashboard/          # Move to [locale]/dashboard/
 └── about/              # Move to [locale]/about/
 ```
 
@@ -64,8 +63,7 @@ app/
 ├── api/                
 └── [locale]/           
 	├── layout.tsx          
-    ├── page.tsx        
-    ├── dashboard/      
+    ├── page.tsx             
     ├── about/          
     └── [...rest]/      # 404 catch-all (installed by registry)
         └── page.tsx
@@ -73,7 +71,7 @@ app/
 
 ### Update root layout
 
-Add locale parameter support to your root layout:
+Overwrite your root layout is too dangerous. So, add locale parameter support to your root layout:
 
 ```tsx title="app/layout.tsx" {1-2,7-11,15}
 import type { Metadata } from 'next';
@@ -81,9 +79,11 @@ import type { ReactNode } from 'react';
 
 export default async function RootLayout({
 	children,
+	//receiving the locale param
 	params,
 }: {
 	children: ReactNode;
+	
 	params: Promise<{ locale: string }>;
 }) {
 	const { locale } = await params;
