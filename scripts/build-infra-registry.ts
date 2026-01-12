@@ -14,7 +14,6 @@ import { siteConfig } from "../src/config/site.js";
 import {
 	ROOT_DIR,
 	INFRA_DIR,
-	OUTPUT_DIR,
 	getAllTsFiles,
 	getFileType,
 	toRegistryUrl,
@@ -55,6 +54,7 @@ function getBuilder(registryName: string): InfraBuilder {
 function generateRegistry(
 	configPath: string,
 	sourceDir: string,
+	ourRegistryNames: Set<string>,
 ): RegistryItem {
 	// Read config.json
 	const config: ConfigJson = JSON.parse(readFileSync(configPath, "utf-8"));
@@ -91,9 +91,8 @@ function generateRegistry(
 			if (dep.startsWith('http://') || dep.startsWith('https://')) {
 				return dep;
 			}
-			// Check if file exists in our registry output
-			const ourRegistryFile = join(OUTPUT_DIR, `${dep}.json`);
-			if (existsSync(ourRegistryFile)) {
+			// Check if this dependency is one of our registry items
+			if (ourRegistryNames.has(dep)) {
 				return toRegistryUrl(dep, siteConfig.registryUrl);
 			}
 			// Otherwise, leave as component name for shadcn's default registry
@@ -126,12 +125,20 @@ function main() {
 		return;
 	}
 
-	// Build each infrastructure config
+	// First pass: collect all our registry item names
+	const ourRegistryNames = new Set<string>();
+	for (const dirName of infraDirs) {
+		const configPath = join(INFRA_DIR, dirName, "config.json");
+		const config: ConfigJson = JSON.parse(readFileSync(configPath, "utf-8"));
+		ourRegistryNames.add(config.name);
+	}
+
+	// Second pass: build each infrastructure config
 	for (const dirName of infraDirs) {
 		const sourceDir = join(INFRA_DIR, dirName);
 		const configPath = join(sourceDir, "config.json");
 
-		const item = generateRegistry(configPath, sourceDir);
+		const item = generateRegistry(configPath, sourceDir, ourRegistryNames);
 		writeRegistryItem(item);
 	}
 
