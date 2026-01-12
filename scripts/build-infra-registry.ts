@@ -14,6 +14,7 @@ import { siteConfig } from "../src/config/site.js";
 import {
 	ROOT_DIR,
 	INFRA_DIR,
+	OUTPUT_DIR,
 	getAllTsFiles,
 	getFileType,
 	toRegistryUrl,
@@ -83,9 +84,21 @@ function generateRegistry(
 	};
 
 	if (config.registryDependencies && config.registryDependencies.length > 0) {
-		item.registryDependencies = config.registryDependencies.map((dep) =>
-			toRegistryUrl(dep, siteConfig.registryUrl),
-		);
+		// Only convert to full URLs for components that exist in our registry
+		// Leave other component names as-is so shadcn fetches them from the default registry
+		item.registryDependencies = config.registryDependencies.map((dep) => {
+			// Check if this is a URL already
+			if (dep.startsWith('http://') || dep.startsWith('https://')) {
+				return dep;
+			}
+			// Check if file exists in our registry output
+			const ourRegistryFile = join(OUTPUT_DIR, `${dep}.json`);
+			if (existsSync(ourRegistryFile)) {
+				return toRegistryUrl(dep, siteConfig.registryUrl);
+			}
+			// Otherwise, leave as component name for shadcn's default registry
+			return dep;
+		});
 	}
 
 	return item;
