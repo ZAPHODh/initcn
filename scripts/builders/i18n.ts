@@ -44,7 +44,12 @@ export class I18nBuilder implements InfraBuilder {
 			return "middleware.ts";
 		}
 
-		// Everything else (locales, server code, client code, types, etc.)
+		// Locales go to root /locales
+		if (relativePath.startsWith("locales/")) {
+			return relativePath;
+		}
+
+		// Everything else (server code, client code, types, etc.)
 		// goes to lib/server/i18n/
 		return `lib/server/i18n/${relativePath}`;
 	}
