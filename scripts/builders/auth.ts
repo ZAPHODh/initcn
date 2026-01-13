@@ -44,7 +44,23 @@ export class AuthBuilder implements InfraBuilder {
 			return "middleware.ts";
 		}
 
-		// Everything else (server code, db, actions, schemas, types, client, etc.)
+		// Client code goes to lib/client/
+		if (relativePath.startsWith("client/")) {
+			return `lib/${relativePath}`;
+		}
+
+		// Actions go to app/actions/
+		if (relativePath.startsWith("actions/")) {
+			return `app/${relativePath}`;
+		}
+
+		// Server code goes to lib/server/auth/ (without nested server/ directory)
+		if (relativePath.startsWith("server/")) {
+			const pathWithoutServerPrefix = relativePath.substring("server/".length);
+			return `lib/server/auth/${pathWithoutServerPrefix}`;
+		}
+
+		// Everything else (db, mail, rate-limit, types, schemas, index.ts, etc.)
 		// goes to lib/server/auth/
 		return `lib/server/auth/${relativePath}`;
 	}
