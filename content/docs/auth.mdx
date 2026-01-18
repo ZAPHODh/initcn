@@ -7,14 +7,11 @@ description: Production-ready OTP authentication for Next.js applications
 
 Secure, passwordless authentication using one-time passwords (OTP) sent via email. Choose your database and with one command, start authenticating users.
 
-## Choose Your Database
+## Installation
 
 <Cards>
   <Card title="Prisma" href="/docs/auth/prisma">
     Complete guide for using auth-otp with Prisma ORM
-  </Card>
-  <Card title="Drizzle" href="/docs/auth/drizzle">
-    Complete guide for using auth-otp with Drizzle ORM
   </Card>
 </Cards>
 
@@ -60,9 +57,6 @@ Add the required tables to your database. The schema includes tables for users, 
   <Card title="Prisma Schema" href="/docs/auth/prisma#database-schema">
     View the Prisma schema and migration commands
   </Card>
-  <Card title="Drizzle Schema" href="/docs/auth/drizzle#database-schema">
-    View the Drizzle schema and migration commands
-  </Card>
 </Cards>
 
 ### 3. Configure Environment Variables
@@ -90,7 +84,7 @@ GOOGLE_REDIRECT_URI="http://localhost:3000/api/auth/login/google/callback"
 Protect pages and server actions with the provided utilities:
 
 ```tsx
-import { getCurrentSession } from "@/lib/auth-otp-prisma"; // or auth-otp-drizzle
+import { getCurrentSession } from "@/lib/auth-otp-prisma";
 import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
@@ -104,7 +98,6 @@ export default async function DashboardPage() {
 
 ## Get Started
 
-Pick your database and follow the complete guide:
+Follow the complete guide:
 
 - [Prisma Guide](/docs/auth/prisma) - Installation, setup, usage, and API reference
-- [Drizzle Guide](/docs/auth/drizzle) - Installation, setup, usage, and API reference

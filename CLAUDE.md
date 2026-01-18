@@ -94,10 +94,7 @@ initcn/
 │   │       │   ├── components/       # React components
 │   │       │   ├── client/           # Client utilities
 │   │       │   └── server/           # Server utilities
-│   │       ├── auth-otp-prisma/
-│   │       │   ├── config.json
-│   │       │   └── ...
-│   │       └── auth-otp-drizzle/
+│   │       └── auth-otp-prisma/
 │   │           ├── config.json
 │   │           └── ...
 │   └── lib/                   # Shared utilities
@@ -223,7 +220,7 @@ The registry is organized into three categories:
    - Custom build script (build-infra-registry.ts)
    - Multi-file, multi-directory patterns
    - Metadata-driven via config.json
-   - Example: `auth-otp-prisma/`, `auth-otp-drizzle/`
+   - Example: `auth-otp-shared/`, `auth-otp-prisma/`, `payment-stripe-shared/`, `payment-stripe-prisma/`
    - Output: Custom target paths per file
 
 ### Adding New Infrastructure Configs

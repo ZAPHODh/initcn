@@ -37,7 +37,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "country-state-city": "^3.2.1",
-    "drizzle-orm": "^0.45.1",
     "fumadocs-core": "16.4.3",
     "fumadocs-mdx": "14.2.4",
     "fumadocs-registry": "0.3.2",

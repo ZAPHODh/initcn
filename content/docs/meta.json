@@ -5,11 +5,9 @@
     "---Authentication---",
     "auth",
     "auth/prisma",
-    "auth/drizzle",
     "---Payments---",
     "payment",
     "payment/prisma",
-    "payment/drizzle",
     "---Internationalization---",
     "i18n"
   ]
