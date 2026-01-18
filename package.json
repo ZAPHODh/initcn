@@ -13,7 +13,8 @@
     "format": "biome format --write",
     "typecheck": "next typegen && tsc --noEmit",
     "test:registry": "node scripts/test-registry.js",
-    "build:registry": "tsx scripts/build-infra-registry.ts && fumadocs-registry"
+    "build:registry": "tsx scripts/build-infra-registry.ts && fumadocs-registry",
+    "validate:registry": "tsx scripts/validate-registry-with-mcp.ts"
   },
   "dependencies": {
     "@oslojs/crypto": "^1.0.1",

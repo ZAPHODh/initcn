@@ -8,7 +8,8 @@
     "resend",
     "@upstash/ratelimit",
     "@upstash/redis",
-    "arctic"
+    "arctic",
+    "zod"
   ],
   "devDependencies": ["prisma"],
   "registryDependencies": ["auth-otp-shared"]

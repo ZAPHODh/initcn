@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { sha256 } from "@oslojs/crypto/sha2";
 import {
 	encodeBase32LowerCaseNoPadding,
@@ -101,29 +102,7 @@ export async function validateSessionToken(
 	return { session, user };
 }
 
-/**
- * Get the current session from cookies
- *
- * Server-side only function that validates the session cookie
- *
- * @returns Session validation result with user data
- *
- * @example
- * ```ts
- * import { getCurrentSession } from "@/lib/auth/server/session";
- *
- * export default async function Page() {
- *   const { user, session } = await getCurrentSession();
- *
- *   if (!user) {
- *     redirect("/login");
- *   }
- *
- *   return <div>Hello {user.email}</div>;
- * }
- * ```
- */
-export async function getCurrentSession(): Promise<SessionValidationResult> {
+export const getCurrentSession = cache(async (): Promise<SessionValidationResult> => {
 	const token = await getSessionTokenCookie(SESSION_COOKIE_NAME);
 
 	if (!token) {
@@ -131,7 +110,7 @@ export async function getCurrentSession(): Promise<SessionValidationResult> {
 	}
 
 	return validateSessionToken(token);
-}
+});
 
 /**
  * Invalidate a session by ID

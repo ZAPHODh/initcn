@@ -146,6 +146,88 @@ Navigate to `/login` to test authentication. The system includes:
 
 ---
 
+## Server Actions vs API Routes
+
+This implementation provides **both** Server Actions and API Routes for maximum flexibility. Choose based on your needs:
+
+### Server Actions (Recommended for New Code)
+
+**Use when:**
+- Building forms with progressive enhancement
+- Want automatic loading/error states
+- Prefer type-safe actions with Zod validation
+- Need seamless integration with React 19's `useActionState`
+
+```tsx
+"use client";
+
+import { AuthFormServerAction } from "@/components/auth-form-server-action";
+import { sendOTPAction, verifyOTPAction } from "@/app/actions/send-otp";
+
+export default function LoginPage() {
+  return <AuthFormServerAction sendOTPAction={sendOTPAction} verifyOTPAction={verifyOTPAction} />;
+}
+```
+
+**Benefits:**
+- ✅ Progressive enhancement (works without JS)
+- ✅ Automatic loading states via `useActionState`
+- ✅ Type-safe with Zod schemas
+- ✅ Direct integration with Next.js caching/revalidation
+
+### API Routes
+
+**Use when:**
+- Need REST API endpoints for external clients
+- Building mobile apps or third-party integrations
+- Require explicit HTTP status codes and headers
+- Prefer traditional fetch-based patterns
+
+```tsx
+"use client";
+
+import { AuthForm } from "@/components/auth-form";
+
+export default function LoginPage() {
+  return <AuthForm redirectTo="/dashboard" />;
+}
+```
+
+**Both patterns are fully supported** - use whichever fits your architecture best!
+
+---
+
+## Performance Optimizations
+
+### Request Memoization with `cache()`
+
+The `getCurrentSession()` function uses React's `cache()` to prevent redundant database queries:
+
+```tsx
+import { cache } from "react";
+
+export const getCurrentSession = cache(async () => {
+  const token = await getSessionTokenCookie(SESSION_COOKIE_NAME);
+  if (!token) return { session: null, user: null };
+  return validateSessionToken(token);
+});
+```
+
+**What this means:**
+- Calling `getCurrentSession()` multiple times in the same request = **1 database query**
+- Works across Server Components, Server Actions, and middleware
+- Automatic deduplication per-request
+
+**Example:**
+```tsx
+// All three calls share the same cached result
+const { user } = await getCurrentSession();  // DB query
+const { session } = await getCurrentSession();  // Cached!
+const result = await getCurrentSession();  // Cached!
+```
+
+---
+
 ## Usage
 
 ### Protect a page
@@ -461,6 +543,30 @@ interface VerificationCode {
 ---
 
 ## Troubleshooting
+
+### Using the Diagnostics Panel
+
+For easy troubleshooting during development, add the diagnostics panel to any page:
+
+```tsx
+import { AuthDiagnosticsPanel } from "@/components/diagnostics-panel";
+import { checkAuthHealth } from "@/app/actions/diagnostics";
+
+export default function DevPage() {
+  return <AuthDiagnosticsPanel checkAuthHealth={checkAuthHealth} />;
+}
+```
+
+The panel checks:
+- ✅ Database connectivity
+- ✅ Redis configuration
+- ✅ Email service setup
+- ✅ OAuth credentials
+- ✅ Session cookies
+
+Each check provides helpful hints for fixing issues.
+
+### Common Issues
 
 **OTP emails not sending in production:**
 - Verify `RESEND_API_KEY` is set correctly

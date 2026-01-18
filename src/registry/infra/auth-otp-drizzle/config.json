@@ -9,7 +9,8 @@
     "resend",
     "@upstash/ratelimit",
     "@upstash/redis",
-    "arctic"
+    "arctic",
+    "zod"
   ],
   "devDependencies": ["drizzle-kit"],
   "registryDependencies": ["auth-otp-shared"]
