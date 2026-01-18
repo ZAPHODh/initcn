@@ -4,6 +4,7 @@
   "title": "Auth OTP (Shared)",
   "description": "Database-agnostic shared code for OTP authentication",
   "dependencies": [
+    "@react-email/components",
     "@oslojs/crypto",
     "@oslojs/encoding",
     "next-safe-action",
