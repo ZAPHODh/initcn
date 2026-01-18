@@ -1,0 +1,121 @@
+---
+title: Stripe Subscriptions
+description: Production-ready Stripe subscription management for Next.js SaaS applications
+---
+
+# Why?
+
+Complete Stripe subscription management with checkout sessions, billing portal, webhooks, and multi-currency support. Choose your database and start billing users with one command.
+
+## Choose Your Database
+
+<Cards>
+  <Card title="Prisma" href="/docs/payment/prisma">
+    Complete guide for using payment-stripe with Prisma ORM
+  </Card>
+  <Card title="Drizzle" href="/docs/payment/drizzle">
+    Complete guide for using payment-stripe with Drizzle ORM
+  </Card>
+</Cards>
+
+## Overview
+
+**payment-stripe** provides production-ready Stripe subscription management with:
+
+- **Checkout Sessions** - Create Stripe checkout for new subscriptions
+- **Billing Portal** - Manage existing subscriptions via Stripe portal
+- **Webhook Handlers** - Idempotent processing for 5 critical events
+- **Multi-Currency** - Support for BRL, USD, and EUR
+- **Plan Management** - FREE, SIMPLE, and PRO tier support
+- **Type Safety** - Full TypeScript support with Zod validation
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| Checkout Sessions | Create Stripe checkout for subscription signup |
+| Billing Portal | Redirect users to manage their subscription |
+| Webhook Events | Handle checkout.session.completed, subscription.updated, etc. |
+| Multi-Currency | Automatic currency selection based on locale |
+| Plan Limits | Feature flags and limits per subscription tier |
+| Idempotency | Prevent duplicate webhook processing |
+
+## What You Need to Do
+
+After installing via the CLI command, you'll need to:
+
+### 1. Configure Environment Variables
+
+Set up your Stripe API keys and price IDs:
+
+```bash title=".env.local"
+# Stripe API Keys
+STRIPE_SECRET_KEY="sk_test_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+
+# Price IDs (create these in Stripe Dashboard)
+STRIPE_SIMPLE_BRL_MONTHLY_ID="price_..."
+STRIPE_SIMPLE_USD_MONTHLY_ID="price_..."
+STRIPE_PRO_BRL_MONTHLY_ID="price_..."
+STRIPE_PRO_USD_MONTHLY_ID="price_..."
+# ... add yearly variants as needed
+```
+
+### 2. Update Your Database Schema
+
+Add the Stripe subscription fields to your User model and create the webhook event table.
+
+<Cards>
+  <Card title="Prisma Schema" href="/docs/payment/prisma#database-schema">
+    View the Prisma schema and migration commands
+  </Card>
+  <Card title="Drizzle Schema" href="/docs/payment/drizzle#database-schema">
+    View the Drizzle schema and migration commands
+  </Card>
+</Cards>
+
+### 3. Create Stripe Products and Prices
+
+In your [Stripe Dashboard](https://dashboard.stripe.com/products):
+
+1. Create products for each plan (Simple, Pro)
+2. Add prices for each currency and billing interval
+3. Copy the price IDs to your environment variables
+
+### 4. Set Up Webhook Endpoint
+
+For local development:
+```bash
+stripe listen --forward-to localhost:3000/api/webhooks/stripe
+```
+
+For production, add the webhook endpoint in Stripe Dashboard pointing to:
+```
+https://yourdomain.com/api/webhooks/stripe
+```
+
+### 5. Start Using Subscriptions
+
+```tsx
+import { getUserSubscriptionPlan } from "@/lib/server/payment/subscription";
+import { redirect } from "next/navigation";
+
+export default async function ProFeaturePage() {
+  const { user } = await getCurrentSession();
+  const plan = await getUserSubscriptionPlan(user.id);
+
+  if (!plan.isPro) {
+    redirect("/pricing");
+  }
+
+  return <div>Welcome to Pro features!</div>;
+}
+```
+
+## Get Started
+
+Pick your database and follow the complete guide:
+
+- [Prisma Guide](/docs/payment/prisma) - Installation, setup, usage, and API reference
+- [Drizzle Guide](/docs/payment/drizzle) - Installation, setup, usage, and API reference

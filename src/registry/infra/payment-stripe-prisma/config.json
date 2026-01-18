@@ -1,0 +1,12 @@
+{
+  "name": "payment-stripe-prisma",
+  "type": "registry:lib",
+  "title": "Payment Stripe (Prisma)",
+  "description": "Stripe subscription management with Prisma ORM",
+  "dependencies": [
+    "@prisma/client",
+    "stripe"
+  ],
+  "devDependencies": ["prisma"],
+  "registryDependencies": ["payment-stripe-shared"]
+}

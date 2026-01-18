@@ -1,0 +1,12 @@
+{
+  "name": "payment-stripe-shared",
+  "type": "registry:lib",
+  "title": "Payment Stripe (Shared)",
+  "description": "Database-agnostic shared code for Stripe subscription management",
+  "dependencies": [
+    "stripe",
+    "zod",
+    "next-safe-action"
+  ],
+  "registryDependencies": []
+}

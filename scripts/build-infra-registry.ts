@@ -25,12 +25,13 @@ import {
 } from "./builders/shared.js";
 import { AuthBuilder } from "./builders/auth.js";
 import { I18nBuilder } from "./builders/i18n.js";
+import { PaymentBuilder } from "./builders/payment.js";
 
 // Register all available builders
 const builders: InfraBuilder[] = [
 	new AuthBuilder(),
 	new I18nBuilder(),
-	// Add new builders here as needed
+	new PaymentBuilder(),
 ];
 
 /**

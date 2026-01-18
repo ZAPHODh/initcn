@@ -1,0 +1,13 @@
+{
+  "name": "payment-stripe-drizzle",
+  "type": "registry:lib",
+  "title": "Payment Stripe (Drizzle)",
+  "description": "Stripe subscription management with Drizzle ORM",
+  "dependencies": [
+    "drizzle-orm",
+    "postgres",
+    "stripe"
+  ],
+  "devDependencies": ["drizzle-kit"],
+  "registryDependencies": ["payment-stripe-shared"]
+}

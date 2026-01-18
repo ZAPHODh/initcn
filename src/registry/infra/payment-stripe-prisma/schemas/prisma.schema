@@ -1,0 +1,36 @@
+// Stripe Subscription Models
+// Add these to your existing Prisma schema
+
+// StripeWebhookEvent model for idempotent webhook processing
+model StripeWebhookEvent {
+  id            String   @id @default(cuid())
+  stripeEventId String   @unique
+  type          String
+  processed     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@index([processed])
+  @@index([stripeEventId])
+}
+
+// Add these fields to your existing User model
+model User {
+  id                     String    @id @unique @default(cuid())
+  // ... your existing user fields ...
+
+  // Stripe subscription fields
+  stripeCustomerId       String?   @unique @map("stripe_customer_id")
+  stripeSubscriptionId   String?   @unique @map("stripe_subscription_id")
+  stripePriceId          String?   @map("stripe_price_id")
+  stripeCurrentPeriodEnd DateTime? @map("stripe_current_period_end")
+  planType               PlanType  @default(FREE)
+
+  // ... rest of your user fields and relations ...
+}
+
+// PlanType enum
+enum PlanType {
+  FREE
+  SIMPLE
+  PRO
+}

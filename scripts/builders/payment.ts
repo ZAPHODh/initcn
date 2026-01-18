@@ -1,16 +1,16 @@
 /**
- * Authentication infrastructure builder
- * Handles all auth-* registry items
+ * Payment infrastructure builder
+ * Handles all payment-* registry items (Stripe subscriptions, billing, etc.)
  */
 
 import { relative } from "node:path";
 import type { InfraBuilder } from "./shared.js";
 
-export class AuthBuilder implements InfraBuilder {
+export class PaymentBuilder implements InfraBuilder {
 	canHandle(registryName: string): boolean {
 		return (
-			registryName.startsWith("auth-") ||
-			registryName === "auth"
+			registryName.startsWith("payment-") ||
+			registryName === "payment"
 		);
 	}
 
@@ -37,14 +37,9 @@ export class AuthBuilder implements InfraBuilder {
 			return `components/${filename}`;
 		}
 
-		// Emails go to emails/
-		if (relativePath.startsWith("emails/")) {
-			return relativePath;
-		}
-
-		// Middleware at root goes to root
-		if (relativePath === "middleware.ts") {
-			return "middleware.ts";
+		// Actions go to app/actions/
+		if (relativePath.startsWith("actions/")) {
+			return `app/${relativePath}`;
 		}
 
 		// Client code goes to lib/client/
@@ -52,19 +47,14 @@ export class AuthBuilder implements InfraBuilder {
 			return `lib/${relativePath}`;
 		}
 
-		// Actions go to app/actions/
-		if (relativePath.startsWith("actions/")) {
-			return `app/${relativePath}`;
-		}
-
-		// Server code goes to lib/server/auth/ (without nested server/ directory)
+		// Server code goes to lib/server/payment/ (without nested server/ directory)
 		if (relativePath.startsWith("server/")) {
 			const pathWithoutServerPrefix = relativePath.substring("server/".length);
-			return `lib/server/auth/${pathWithoutServerPrefix}`;
+			return `lib/server/payment/${pathWithoutServerPrefix}`;
 		}
 
-		// Everything else (db, mail, rate-limit, types, schemas, index.ts, etc.)
-		// goes to lib/server/auth/
-		return `lib/server/auth/${relativePath}`;
+		// Everything else (db, schemas, types, index.ts, etc.)
+		// goes to lib/server/payment/
+		return `lib/server/payment/${relativePath}`;
 	}
 }
