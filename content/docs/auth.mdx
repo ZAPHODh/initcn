@@ -3,85 +3,234 @@ title: Authentication with OTP
 description: Production-ready OTP authentication for Next.js applications
 ---
 
-# Why?
+# Authentication with OTP
 
-Secure, passwordless authentication using one-time passwords (OTP) sent via email. Choose your database and with one command, start authenticating users.
+Complete, production-ready authentication using OTP and Google OAuth with Prisma ORM. Install with one command and start authenticating users.
 
 ## Installation
 
-<Cards>
-  <Card title="Prisma" href="/docs/auth/prisma">
-    Complete guide for using auth-otp with Prisma ORM
-  </Card>
-</Cards>
+<Steps>
 
-## Overview
+### Install from registry
 
-**auth-otp** provides a complete, production-ready authentication solution with **Passwordless OTP**, **Google OAuth**, **Rate limiting**, and **Type-safety**.
+<Tabs items={["npm", "pnpm", "yarn", "bun"]}>
+  <Tab value="npm">
+  ```bash
+  npx shadcn@latest add @initcn/auth-otp-prisma
+  ```
+  </Tab>
 
-## What You Need to Do
+  <Tab value="pnpm">
+  ```bash
+  pnpm dlx shadcn@latest add @initcn/auth-otp-prisma
+  ```
+  </Tab>
 
-After installing the CLI command, you'll need to:
+  <Tab value="yarn">
+  ```bash
+  yarn dlx shadcn@latest add @initcn/auth-otp-prisma
+  ```
+  </Tab>
 
-### 1. Add Login Dialog to Your Layout
+  <Tab value="bun">
+  ```bash
+  bunx --bun shadcn@latest add @initcn/auth-otp-prisma
+  ```
+  </Tab>
+</Tabs>
 
-Update your root layout to include dialog, for interpecpted routes.
+This installs:
+- **auth-otp-shared** (auto-installed) - UI components, utilities, types
+- **auth-otp-prisma** - Database operations, email, rate limiting, OAuth, routes, pages
 
-```tsx
-import type { ReactNode } from "react";
-//your root layout
-export default function Layout({
-  children,
-  //receive the modal as prop
-  modal,
-}: {
-  children: ReactNode;
-  modal: ReactNode;
-}) {
-  return (
-    <>
-      {children}
-      //then put it here
-      {modal}
-    </>
-  );
+### Set up database
+
+Copy the Prisma schema from `lib/auth-otp-prisma/schemas/prisma.schema` to your `prisma/schema.prisma`:
+
+```prisma
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  picture       String?
+  emailVerified Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  verificationCodes VerificationCode[]
+  sessions          Session[]
 }
 
+model VerificationCode {
+  id        String   @id @default(cuid())
+  userId    String
+  email     String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([email])
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
 ```
 
-### 2. Update Your Database Schema
+Then run:
 
-Add the required tables to your database. The schema includes tables for users, sessions, and verification codes.
+```bash
+npx prisma generate
+npx prisma db push
+```
 
-<Cards>
-  <Card title="Prisma Schema" href="/docs/auth/prisma#database-schema">
-    View the Prisma schema and migration commands
-  </Card>
-</Cards>
+### Configure environment variables
 
-### 3. Configure Environment Variables
+Create `.env.local`:
 
-Set up your environment variables for email service (Resend), rate limiting (Upstash Redis), and OAuth (Google):
+```bash
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/mydb"
 
-```bash title=".env.local"
-DATABASE_URL="postgresql://..."
-
-# Resend (email service)
+# Resend (optional in dev - uses console.log)
 RESEND_API_KEY="re_..."
+AUTH_EMAIL_FROM="Auth <auth@yourdomain.com>"
 
-# Upstash Redis (rate limiting)
+# Upstash Redis (optional in dev - uses in-memory)
 UPSTASH_REDIS_REST_URL="https://..."
 UPSTASH_REDIS_REST_TOKEN="..."
 
 # Google OAuth
-GOOGLE_CLIENT_ID="..."
-GOOGLE_CLIENT_SECRET="..."
+GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="your-client-secret"
 GOOGLE_REDIRECT_URI="http://localhost:3000/api/auth/login/google/callback"
 ```
 
-### 4. Start Using Authentication
+<Callout type="info">
+**Development mode:** Set `NODE_ENV=development` and the system automatically:
+- Uses console.log for emails (no Resend needed)
+- Uses in-memory storage for rate limiting (no Redis needed)
 
-Protect pages and server actions with the provided utilities:
+Just set `DATABASE_URL` and `GOOGLE_*` variables to get started!
+</Callout>
+
+### Set up Google OAuth (optional)
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing
+3. Enable Google+ API
+4. Create OAuth 2.0 Client ID credentials
+5. Add redirect URI: `http://localhost:3000/api/auth/login/google/callback`
+6. Copy Client ID and Secret to `.env.local`
+
+### Done!
+
+Navigate to `/login` to test authentication. The system includes:
+
+- API routes at `/api/auth/login/*`
+- Login page at `/login`
+- Modal login interceptor
+- Session management
+- Logout action
+
+</Steps>
+
+---
+
+## Server Actions vs API Routes
+
+This implementation provides **both** Server Actions and API Routes for maximum flexibility. Choose based on your needs:
+
+### Server Actions (Recommended for New Code)
+
+**Use when:**
+- Building forms with progressive enhancement
+- Want automatic loading/error states
+- Prefer type-safe actions with Zod validation
+- Need seamless integration with React 19's `useActionState`
+
+```tsx
+"use client";
+
+import { AuthFormServerAction } from "@/components/auth-form-server-action";
+import { sendOTPAction, verifyOTPAction } from "@/app/actions/send-otp";
+
+export default function LoginPage() {
+  return <AuthFormServerAction sendOTPAction={sendOTPAction} verifyOTPAction={verifyOTPAction} />;
+}
+```
+
+**Benefits:**
+- Progressive enhancement (works without JS)
+- Automatic loading states via `useActionState`
+- Type-safe with Zod schemas
+- Direct integration with Next.js caching/revalidation
+
+### API Routes
+
+**Use when:**
+- Need REST API endpoints for external clients
+- Building mobile apps or third-party integrations
+- Require explicit HTTP status codes and headers
+- Prefer traditional fetch-based patterns
+
+```tsx
+"use client";
+
+import { AuthForm } from "@/components/auth-form";
+
+export default function LoginPage() {
+  return <AuthForm redirectTo="/dashboard" />;
+}
+```
+
+**Both patterns are fully supported** - use whichever fits your architecture best!
+
+---
+
+## Performance Optimizations
+
+### Request Memoization with `cache()`
+
+The `getCurrentSession()` function uses React's `cache()` to prevent redundant database queries:
+
+```tsx
+import { cache } from "react";
+
+export const getCurrentSession = cache(async () => {
+  const token = await getSessionTokenCookie(SESSION_COOKIE_NAME);
+  if (!token) return { session: null, user: null };
+  return validateSessionToken(token);
+});
+```
+
+**What this means:**
+- Calling `getCurrentSession()` multiple times in the same request = **1 database query**
+- Works across Server Components, Server Actions, and middleware
+- Automatic deduplication per-request
+
+**Example:**
+```tsx
+// All three calls share the same cached result
+const { user } = await getCurrentSession();  // DB query
+const { session } = await getCurrentSession();  // Cached!
+const result = await getCurrentSession();  // Cached!
+```
+
+---
+
+## Usage
+
+### Protect a page
 
 ```tsx
 import { getCurrentSession } from "@/lib/auth-otp-prisma";
@@ -90,14 +239,358 @@ import { redirect } from "next/navigation";
 export default async function DashboardPage() {
   const { user, session } = await getCurrentSession();
 
-  if (!session) redirect("/login");
+  if (!session) {
+    redirect("/login");
+  }
 
-  return <div>Hello {user.email}</div>;
+  return (
+    <div>
+      <h1>Dashboard</h1>
+      <p>Hello {user.email}</p>
+      {user.name && <p>Welcome back, {user.name}!</p>}
+    </div>
+  );
 }
 ```
 
-## Get Started
+### Protect a server action
 
-Follow the complete guide:
+```tsx
+"use server";
 
-- [Prisma Guide](/docs/auth/prisma) - Installation, setup, usage, and API reference
+import { authActionClient } from "@/lib/auth-otp-prisma";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+
+const schema = z.object({
+  title: z.string().min(1),
+  content: z.string(),
+});
+
+export const createPost = authActionClient
+  .schema(schema)
+  .action(async ({ ctx, parsedInput }) => {
+    // ctx.user, ctx.userId, ctx.sessionId are automatically available
+    // Action only runs if user is authenticated
+
+    const post = await prisma.post.create({
+      data: {
+        ...parsedInput,
+        authorId: ctx.userId,
+      },
+    });
+
+    revalidatePath("/posts");
+    return { post };
+  });
+```
+
+### Manual session validation
+
+```tsx
+import { validateSessionToken } from "@/lib/auth-otp-prisma";
+
+export async function GET(request: Request) {
+  const token = request.cookies.get("session")?.value;
+
+  if (!token) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { user, session } = await validateSessionToken(token);
+
+  if (!session) {
+    return Response.json({ error: "Invalid session" }, { status: 401 });
+  }
+
+  return Response.json({ user });
+}
+```
+
+### Logout user
+
+```tsx
+"use client";
+
+import { logout } from "@/lib/auth-otp-prisma";
+import { useAction } from "next-safe-action/hooks";
+import { Button } from "@/components/ui/button";
+
+export function LogoutButton() {
+  const { execute, isExecuting } = useAction(logout);
+
+  return (
+    <Button onClick={() => execute()} disabled={isExecuting}>
+      {isExecuting ? "Logging out..." : "Logout"}
+    </Button>
+  );
+}
+```
+
+### Get current user in client component
+
+```tsx
+"use client";
+
+import { useEffect, useState } from "react";
+import type { User } from "@/lib/auth-otp-shared/types";
+
+export function UserProfile() {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    fetch("/api/user")
+      .then((res) => res.json())
+      .then(setUser);
+  }, []);
+
+  if (!user) return <div>Loading...</div>;
+
+  return (
+    <div>
+      <p>{user.email}</p>
+      {user.picture && <img src={user.picture} alt={user.name || "User"} />}
+    </div>
+  );
+}
+```
+
+---
+
+## Customization
+
+### Change email template
+
+Edit `emails/otp-email.tsx` to customize the OTP email:
+
+```tsx
+import { Html, Head, Body, Container, Text, Button } from "@react-email/components";
+
+export default function OTPEmail({ code, userName }: { code: string; userName?: string }) {
+  return (
+    <Html>
+      <Head />
+      <Body>
+        <Container>
+          <Text>Hi {userName || "there"}!</Text>
+          <Text>Your verification code is:</Text>
+          <Text style={{ fontSize: 32, fontWeight: "bold" }}>{code}</Text>
+          <Text>This code will expire in 3 minutes.</Text>
+        </Container>
+      </Body>
+    </Html>
+  );
+}
+```
+
+### Adjust rate limits
+
+Edit constants in the API route files:
+
+```ts
+// api/auth/login/send-otp/route.ts
+const OTP_LENGTH = 6;
+const OTP_EXPIRY_MINUTES = 3;
+const EMAIL_RATE_LIMIT = { requests: 3, window: "15 m" as const };
+const IP_RATE_LIMIT = { requests: 20, window: "15 m" as const };
+```
+
+```ts
+// api/auth/login/verify-otp/route.ts
+const MAX_FAILED_ATTEMPTS = 10;
+const FAILED_ATTEMPTS_WINDOW_SECONDS = 3600;
+const EMAIL_RATE_LIMIT = { requests: 10, window: "15 m" as const };
+const IP_RATE_LIMIT = { requests: 50, window: "15 m" as const };
+```
+
+### Modify session expiry
+
+Edit `lib/auth-otp-prisma/server/session.ts`:
+
+```ts
+export const SESSION_EXPIRY_DAYS = 30;           // Sessions last 30 days
+export const SESSION_RENEWAL_THRESHOLD_DAYS = 15; // Renew if < 15 days left
+export const SESSION_COOKIE_NAME = "session";    // Cookie name
+```
+
+### Change redirect after login
+
+Edit the callback route at `api/auth/login/google/callback/route.ts`:
+
+```ts
+// Change this line:
+return Response.redirect(new URL("/dashboard", request.url));
+
+// To redirect elsewhere:
+return Response.redirect(new URL("/your-path", request.url));
+```
+
+### Add more OAuth providers
+
+The system supports any OAuth provider via [Arctic](https://arctic.js.org). Add new providers:
+
+1. Install Arctic provider (if needed)
+2. Create provider setup in `lib/auth-otp-prisma/server/`
+3. Create route handlers in `api/auth/login/[provider]/`
+
+Example for GitHub:
+
+```ts
+// lib/auth-otp-prisma/server/github.ts
+import { GitHub } from "arctic";
+
+export const github = new GitHub(
+  process.env.GITHUB_CLIENT_ID!,
+  process.env.GITHUB_CLIENT_SECRET!,
+  process.env.GITHUB_REDIRECT_URI!
+);
+```
+
+---
+
+## API Reference
+
+### Session Management
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `getCurrentSession()` | Get current session from cookies (server-side) | `Promise<SessionValidationResult>` |
+| `validateSessionToken(token)` | Validate and renew session token | `Promise<SessionValidationResult>` |
+| `createSession(token, userId)` | Create new session for user | `Promise<Session>` |
+| `invalidateSession(sessionId)` | Delete session by ID | `Promise<void>` |
+| `invalidateAllUserSessions(userId)` | Delete all sessions for user | `Promise<void>` |
+| `generateSessionToken()` | Generate cryptographically secure token | `string` |
+
+### Database Operations
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `prisma` | Prisma client instance | `PrismaClient` |
+
+### Email Service
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `sendOTP({ to, code, userName })` | Send OTP email (console in dev) | `Promise<void>` |
+
+### Rate Limiting
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `rateLimitByEmail(email, requests, window)` | Check rate limit by email | `Promise<RateLimitResult>` |
+| `rateLimitByIP(ip, requests, window)` | Check rate limit by IP | `Promise<RateLimitResult>` |
+| `trackFailedAttempt(key, max, windowSec)` | Track failed verification attempt | `Promise<FailedAttemptResult>` |
+| `resetFailedAttempts(key)` | Reset failed attempt counter | `Promise<void>` |
+
+### OTP Utilities (from shared)
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `generateOTP(length)` | Generate random numeric OTP | `string` |
+| `getOTPExpiry(minutes)` | Get expiry date for OTP | `Date` |
+| `isOTPExpired(expiresAt)` | Check if OTP has expired | `boolean` |
+
+### Cookie Utilities (from shared)
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `setSessionTokenCookie(token, expiresAt, name)` | Set session cookie | `Promise<void>` |
+| `getSessionTokenCookie(name)` | Get session cookie value | `Promise<string \| undefined>` |
+| `deleteSessionTokenCookie()` | Delete session cookie | `Promise<void>` |
+
+### Validation Utilities (from shared)
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `validateEmail(email)` | Validate email format | `boolean` |
+| `normalizeEmail(email)` | Normalize email to lowercase | `string` |
+| `extractClientIP(request)` | Extract client IP from request | `string` |
+
+### Types
+
+```typescript
+interface User {
+  id: string;
+  email: string;
+  name: string | null;
+  picture: string | null;
+  emailVerified: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface Session {
+  id: string;
+  userId: string;
+  expiresAt: Date;
+}
+
+interface SessionValidationResult {
+  session: Session | null;
+  user: User | null;
+}
+
+interface VerificationCode {
+  id: string;
+  userId: string;
+  email: string;
+  code: string;
+  expiresAt: Date;
+  createdAt: Date;
+}
+```
+
+---
+
+## Troubleshooting
+
+### Using the Diagnostics Panel
+
+For easy troubleshooting during development, add the diagnostics panel to any page:
+
+```tsx
+import { AuthDiagnosticsPanel } from "@/components/diagnostics-panel";
+import { checkAuthHealth } from "@/app/actions/diagnostics";
+
+export default function DevPage() {
+  return <AuthDiagnosticsPanel checkAuthHealth={checkAuthHealth} />;
+}
+```
+
+The panel checks:
+- Database connectivity
+- Redis configuration
+- Email service setup
+- OAuth credentials
+- Session cookies
+
+Each check provides helpful hints for fixing issues.
+
+### Common Issues
+
+**OTP emails not sending in production:**
+- Verify `RESEND_API_KEY` is set correctly
+- Check `AUTH_EMAIL_FROM` matches your verified Resend domain
+- Check Resend dashboard for error logs
+
+**Rate limiting not working:**
+- Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
+- In development, in-memory fallback is used automatically
+
+**Google OAuth redirect error:**
+- Ensure `GOOGLE_REDIRECT_URI` matches callback URL in Google Console
+- Check redirect URI is added to authorized URIs in Google Console
+- Verify `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are correct
+
+**Session not persisting:**
+- Check cookies are enabled in browser
+- Verify `secure` cookie flag matches environment (disabled in dev)
+- Ensure database connection is working
+
+**TypeScript errors:**
+- Run `npx prisma generate` to generate Prisma types
+- Restart TypeScript server in your IDE
+
+**Build errors:**
+- Ensure all dependencies are installed
+- Check for import path errors (`@/lib/auth-otp-prisma` vs `@/lib/auth-otp-shared`)

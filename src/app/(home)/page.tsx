@@ -11,10 +11,10 @@ import {
 
 export default function HomePage() {
   const stats = [
-    { value: "Auth", label: "with your ORM" },
+    { value: "Auth", label: "Otp authentication" },
     { value: "I18n", label: "with next-international" },
-    { value: "Payments", label: "Comming Soon" },
-    { value: "More", label: "Coming Soon" },
+    { value: "Payments", label: "With stripe" },
+    { value: "More", label: "Coming soon" },
     
   ];
 
