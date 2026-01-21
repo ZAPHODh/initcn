@@ -4,10 +4,8 @@
     "index",
     "---Authentication---",
     "auth",
-    "auth/prisma",
     "---Payments---",
     "payment",
-    "payment/prisma",
     "---Internationalization---",
     "i18n"
   ]
