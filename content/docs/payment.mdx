@@ -3,27 +3,43 @@ title: Subscription
 description: Set up Stripe subscription management with Prisma ORM
 ---
 
-omplete guide for integrating Stripe subscription management using Prisma ORM.
+## Installation
 
-## Installation from registry
+<Steps>
 
-```bash
-pnpm shadcn@latest add @initcn/payment-stripe-prisma
-```
+### Install from registry
 
-This will install the following files:
+<Tabs items={["npm", "pnpm", "yarn", "bun"]}>
+  <Tab value="npm">
+  ```bash
+  npx shadcn@latest add @initcn/subscription
+  ```
+  </Tab>
 
-| File | Description |
-|------|-------------|
-| `lib/server/payment/db.ts` | Stripe client initialization |
-| `lib/server/payment/subscription.ts` | Subscription status queries |
-| `lib/server/payment/webhooks.ts` | Webhook event processing |
-| `app/api/stripe/route.ts` | Checkout & billing portal endpoint |
-| `app/api/webhooks/stripe/route.ts` | Webhook handler |
-| `app/actions/create-checkout.ts` | Server action for checkout |
-| `app/actions/manage-billing.ts` | Server action for billing portal |
+  <Tab value="pnpm">
+  ```bash
+  pnpm dlx shadcn@latest add @initcn/subscription
+  ```
+  </Tab>
 
-## Database Schema
+  <Tab value="yarn">
+  ```bash
+  yarn dlx shadcn@latest add @initcn/subscription
+  ```
+  </Tab>
+
+  <Tab value="bun">
+  ```bash
+  bunx --bun shadcn@latest add @initcn/subscription
+  ```
+  </Tab>
+</Tabs>
+
+This installs:
+- **payment-stripe-shared** (auto-installed) - Stripe utilities, pricing, config, types
+- **payment-stripe-prisma** - Database operations, webhooks, checkout, billing portal
+
+### Set up database
 
 Add these models to your `prisma/schema.prisma`:
 
@@ -67,7 +83,7 @@ Run the migration:
 npx prisma migrate dev --name add_stripe_subscription
 ```
 
-## Environment Variables
+### Configure environment variables
 
 Add these to your `.env.local`:
 
@@ -94,23 +110,23 @@ STRIPE_PRO_EUR_MONTHLY_ID="price_..."
 STRIPE_PRO_EUR_YEARLY_ID="price_..."
 ```
 
-## Stripe Dashboard Setup
+### Set up Stripe Dashboard
 
-### 1. Create Products
+#### Create Products
 
 In [Stripe Dashboard > Products](https://dashboard.stripe.com/products):
 
 1. Create "Simple" product with description
 2. Create "Pro" product with description
 
-### 2. Create Prices
+#### Create Prices
 
 For each product, create prices:
 
 - Monthly BRL, USD, EUR
 - Yearly BRL, USD, EUR (with discount)
 
-### 3. Configure Webhook
+#### Configure Webhook
 
 Add webhook endpoint in [Stripe Dashboard > Webhooks](https://dashboard.stripe.com/webhooks):
 
@@ -122,6 +138,18 @@ Add webhook endpoint in [Stripe Dashboard > Webhooks](https://dashboard.stripe.c
 - `invoice.payment_succeeded`
 - `customer.subscription.updated`
 - `customer.subscription.deleted`
+
+### Done!
+
+You can now create checkout sessions and manage subscriptions. The system includes:
+
+- API route at `/api/stripe` (checkout & billing portal)
+- Webhook handler at `/api/webhooks/stripe`
+- Server actions for checkout and billing management
+
+</Steps>
+
+---
 
 ## Usage
 
@@ -239,6 +267,8 @@ export async function canCreateProject(userId: string): Promise<boolean> {
 }
 ```
 
+---
+
 ## Webhook Testing
 
 ### Local Development
@@ -275,6 +305,8 @@ stripe trigger customer.subscription.updated
 # Test subscription cancellation
 stripe trigger customer.subscription.deleted
 ```
+
+---
 
 ## API Reference
 

@@ -1,5 +1,5 @@
 {
-  "name": "auth-otp-prisma",
+  "name": "otp",
   "type": "registry:lib",
   "title": "Auth OTP (Prisma + Google)",
   "description": "OTP and Google OAuth authentication with Prisma ORM",

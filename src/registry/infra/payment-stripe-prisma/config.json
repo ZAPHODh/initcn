@@ -1,5 +1,5 @@
 {
-  "name": "payment-stripe-prisma",
+  "name": "subscription",
   "type": "registry:lib",
   "title": "Payment Stripe (Prisma)",
   "description": "Stripe subscription management with Prisma ORM",

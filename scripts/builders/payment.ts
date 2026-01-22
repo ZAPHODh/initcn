@@ -10,7 +10,8 @@ export class PaymentBuilder implements InfraBuilder {
 	canHandle(registryName: string): boolean {
 		return (
 			registryName.startsWith("payment-") ||
-			registryName === "payment"
+			registryName === "payment" ||
+			registryName === "subscription"
 		);
 	}
 

@@ -10,7 +10,8 @@ export class AuthBuilder implements InfraBuilder {
 	canHandle(registryName: string): boolean {
 		return (
 			registryName.startsWith("auth-") ||
-			registryName === "auth"
+			registryName === "auth" ||
+			registryName === "otp"
 		);
 	}
 
