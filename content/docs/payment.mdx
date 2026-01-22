@@ -5,10 +5,6 @@ description: Set up Stripe subscription management with Prisma ORM
 
 ## Installation
 
-<Steps>
-
-### Install from registry
-
 <Tabs items={["npm", "pnpm", "yarn", "bun"]}>
   <Tab value="npm">
   ```bash
@@ -35,13 +31,76 @@ description: Set up Stripe subscription management with Prisma ORM
   </Tab>
 </Tabs>
 
-This installs:
-- **payment-stripe-shared** (auto-installed) - Stripe utilities, pricing, config, types
-- **payment-stripe-prisma** - Database operations, webhooks, checkout, billing portal
+---
 
-### Set up database
+## What is Installed
 
-Add these models to your `prisma/schema.prisma`:
+### API Routes
+
+| File | Path | Description |
+|------|------|-------------|
+| `route.ts` | `app/api/stripe/route.ts` | Checkout session creation |
+| `route.ts` | `app/api/webhooks/stripe/route.ts` | Stripe webhook handler |
+
+### Server Actions
+
+| File | Path | Description |
+|------|------|-------------|
+| `create-checkout.ts` | `app/actions/create-checkout.ts` | Create checkout session |
+| `manage-billing.ts` | `app/actions/manage-billing.ts` | Open billing portal |
+
+### Server Utilities
+
+| File | Path | Description |
+|------|------|-------------|
+| `subscription.ts` | `lib/server/payment/subscription.ts` | Subscription status queries |
+| `webhooks.ts` | `lib/server/payment/webhooks.ts` | Webhook event handlers |
+| `config.ts` | `lib/server/payment/config.ts` | Stripe configuration |
+| `pricing.ts` | `lib/server/payment/pricing.ts` | Multi-currency pricing |
+| `validation.ts` | `lib/server/payment/validation.ts` | Input validation schemas |
+| `db.ts` | `lib/server/payment/db.ts` | Stripe client instance |
+| `types.ts` | `lib/server/payment/types.ts` | TypeScript types |
+
+### Client Utilities
+
+| File | Path | Description |
+|------|------|-------------|
+| `safe-action.ts` | `lib/client/safe-action.ts` | next-safe-action client |
+
+### Other Files
+
+| File | Path | Description |
+|------|------|-------------|
+| `prisma.schema` | `lib/server/payment/schemas/prisma.schema` | Prisma schema (copy manually) |
+| `.env.example.subscription` | `.env.example.subscription` | Environment variables template |
+
+---
+
+## What's Next
+
+<Steps>
+
+### Add environment variables
+
+Copy the installed `.env.example.subscription` to your `.env.local`:
+
+```bash
+cat .env.example.subscription >> .env.local
+```
+
+Then configure:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `STRIPE_SECRET_KEY` | Yes | Stripe secret API key |
+| `STRIPE_WEBHOOK_SECRET` | Yes | Webhook signing secret |
+| `NEXT_PUBLIC_APP_URL` | Yes | Your app URL |
+| `STRIPE_SIMPLE_*_ID` | Yes | Simple plan price IDs (6 total) |
+| `STRIPE_PRO_*_ID` | Yes | Pro plan price IDs (6 total) |
+
+### Add Prisma schema
+
+Copy the schema from `lib/server/payment/schemas/prisma.schema` to your `prisma/schema.prisma`:
 
 ```prisma
 // Add to your existing User model
@@ -77,43 +136,10 @@ enum PlanType {
 }
 ```
 
-Run the migration:
+Then run:
 
 ```bash
 npx prisma migrate dev --name add_stripe_subscription
-```
-
-### Configure environment variables
-
-An `.env.example.subscription` file was installed with the registry. Append it to your `.env.local`:
-
-```bash
-cat .env.example.subscription >> .env.local
-```
-
-Or add these manually to your `.env.local`:
-
-```bash
-# Stripe API Keys
-STRIPE_SECRET_KEY="sk_test_..."
-STRIPE_WEBHOOK_SECRET="whsec_..."
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
-
-# Simple Plan Price IDs
-STRIPE_SIMPLE_BRL_MONTHLY_ID="price_..."
-STRIPE_SIMPLE_BRL_YEARLY_ID="price_..."
-STRIPE_SIMPLE_USD_MONTHLY_ID="price_..."
-STRIPE_SIMPLE_USD_YEARLY_ID="price_..."
-STRIPE_SIMPLE_EUR_MONTHLY_ID="price_..."
-STRIPE_SIMPLE_EUR_YEARLY_ID="price_..."
-
-# Pro Plan Price IDs
-STRIPE_PRO_BRL_MONTHLY_ID="price_..."
-STRIPE_PRO_BRL_YEARLY_ID="price_..."
-STRIPE_PRO_USD_MONTHLY_ID="price_..."
-STRIPE_PRO_USD_YEARLY_ID="price_..."
-STRIPE_PRO_EUR_MONTHLY_ID="price_..."
-STRIPE_PRO_EUR_YEARLY_ID="price_..."
 ```
 
 ### Set up Stripe Dashboard
@@ -127,7 +153,7 @@ In [Stripe Dashboard > Products](https://dashboard.stripe.com/products):
 
 #### Create Prices
 
-For each product, create prices:
+For each product, create prices for:
 
 - Monthly BRL, USD, EUR
 - Yearly BRL, USD, EUR (with discount)
@@ -145,213 +171,313 @@ Add webhook endpoint in [Stripe Dashboard > Webhooks](https://dashboard.stripe.c
 - `customer.subscription.updated`
 - `customer.subscription.deleted`
 
-### Done!
-
-You can now create checkout sessions and manage subscriptions. The system includes:
-
-- API route at `/api/stripe` (checkout & billing portal)
-- Webhook handler at `/api/webhooks/stripe`
-- Server actions for checkout and billing management
-
-</Steps>
-
----
-
-## Usage
-
-### Check Subscription Status
-
-```tsx
-import { getUserSubscriptionPlan } from "@/lib/server/payment/subscription";
-import { getCurrentSession } from "@/lib/server/auth/session";
-
-export default async function DashboardPage() {
-  const { user } = await getCurrentSession();
-  const plan = await getUserSubscriptionPlan(user.id);
-
-  return (
-    <div>
-      <p>Current Plan: {plan.name}</p>
-      <p>Status: {plan.isActive ? "Active" : "Inactive"}</p>
-      {plan.isPro && <p>Pro features unlocked!</p>}
-    </div>
-  );
-}
-```
-
-### Create Checkout Session (API Route)
-
-Redirect users to the checkout page:
-
-```tsx
-"use client";
-
-export function UpgradeButton() {
-  const handleUpgrade = async () => {
-    const response = await fetch("/api/stripe?plan=pro&interval=monthly");
-    const { url } = await response.json();
-    window.location.href = url;
-  };
-
-  return <button onClick={handleUpgrade}>Upgrade to Pro</button>;
-}
-```
-
-### Create Checkout Session (Server Action)
-
-```tsx
-"use client";
-
-import { createCheckout } from "@/app/actions/create-checkout";
-import { useAction } from "next-safe-action/hooks";
-
-export function UpgradeButton() {
-  const { execute, status } = useAction(createCheckout);
-
-  const handleUpgrade = async () => {
-    const result = await execute({
-      plan: "pro",
-      interval: "monthly",
-      locale: "en",
-    });
-
-    if (result?.data?.url) {
-      window.location.href = result.data.url;
-    }
-  };
-
-  return (
-    <button onClick={handleUpgrade} disabled={status === "executing"}>
-      {status === "executing" ? "Loading..." : "Upgrade to Pro"}
-    </button>
-  );
-}
-```
-
-### Manage Billing Portal
-
-```tsx
-"use client";
-
-import { manageBilling } from "@/app/actions/manage-billing";
-import { useAction } from "next-safe-action/hooks";
-
-export function ManageBillingButton() {
-  const { execute, status } = useAction(manageBilling);
-
-  const handleManage = async () => {
-    const result = await execute({});
-
-    if (result?.data?.url) {
-      window.location.href = result.data.url;
-    }
-  };
-
-  return (
-    <button onClick={handleManage} disabled={status === "executing"}>
-      Manage Billing
-    </button>
-  );
-}
-```
-
-### Check Plan Limits
-
-```tsx
-import { getPlanLimits } from "@/lib/server/payment/subscription";
-import { getUserSubscriptionPlan } from "@/lib/server/payment/subscription";
-
-export async function canCreateProject(userId: string): Promise<boolean> {
-  const plan = await getUserSubscriptionPlan(userId);
-  const limits = getPlanLimits(plan.name);
-
-  // Check if user has reached project limit
-  const projectCount = await getProjectCount(userId);
-
-  if (limits.maxProjects === -1) return true; // Unlimited
-  return projectCount < limits.maxProjects;
-}
-```
-
----
-
-## Webhook Testing
-
-### Local Development
-
-Install Stripe CLI and forward webhooks:
+### Test locally with Stripe CLI
 
 ```bash
 # Install Stripe CLI
 brew install stripe/stripe-cli/stripe
 
-# Login to Stripe
+# Login and forward webhooks
 stripe login
-
-# Forward webhooks to local server
 stripe listen --forward-to localhost:3000/api/webhooks/stripe
 ```
 
-Copy the webhook signing secret to your `.env.local`:
-```bash
-STRIPE_WEBHOOK_SECRET="whsec_..."
-```
+Copy the webhook signing secret to your `.env.local`.
 
-### Test Events
-
-Trigger test events:
-
-```bash
-# Test checkout completion
-stripe trigger checkout.session.completed
-
-# Test subscription update
-stripe trigger customer.subscription.updated
-
-# Test subscription cancellation
-stripe trigger customer.subscription.deleted
-```
+</Steps>
 
 ---
 
 ## API Reference
 
-### getUserSubscriptionPlan(userId)
+### Server Actions
+
+#### createCheckout
+
+Creates a Stripe checkout session for subscription.
+
+```ts
+import { createCheckout } from "@/app/actions/create-checkout";
+import { useAction } from "next-safe-action/hooks";
+
+const { execute } = useAction(createCheckout);
+const result = await execute({ plan: "pro", interval: "monthly", locale: "en" });
+```
+
+**Input:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `plan` | `"simple" \| "pro"` | Yes | Plan type |
+| `interval` | `"monthly" \| "yearly"` | Yes | Billing interval |
+| `locale` | `string` | No | Locale for currency (default: `"en"`) |
+
+**Returns:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `url` | `string \| null` | Stripe checkout URL |
+
+---
+
+#### manageBilling
+
+Redirects user to Stripe billing portal.
+
+```ts
+import { manageBilling } from "@/app/actions/manage-billing";
+import { useAction } from "next-safe-action/hooks";
+
+const { execute } = useAction(manageBilling);
+const result = await execute({});
+```
+
+**Returns:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `url` | `string \| null` | Stripe billing portal URL |
+
+---
+
+### Subscription Management
+
+#### getUserSubscriptionPlan
 
 Returns the user's current subscription plan with status.
 
 ```ts
+import { getUserSubscriptionPlan } from "@/lib/server/payment/subscription";
+
 const plan = await getUserSubscriptionPlan(userId);
-// Returns: UserSubscriptionPlan
 ```
 
-**Return type:**
-```ts
-interface UserSubscriptionPlan {
-  name: string;
-  description: string;
-  stripePriceId: string;
-  stripeCustomerId: string | null;
-  stripeSubscriptionId: string | null;
-  stripeCurrentPeriodEnd: number | null;
-  isPro: boolean;
-  isActive: boolean;
-}
-```
+**Parameters:**
 
-### getPlanLimits(planName)
+| Name | Type | Description |
+|------|------|-------------|
+| `userId` | `string` | User ID |
+
+**Returns:** `Promise<UserSubscriptionPlan>`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | `string` | Plan name (FREE, SIMPLE, PRO) |
+| `description` | `string` | Plan description |
+| `stripePriceId` | `string` | Current price ID |
+| `stripeCustomerId` | `string \| null` | Stripe customer ID |
+| `stripeSubscriptionId` | `string \| null` | Stripe subscription ID |
+| `stripeCurrentPeriodEnd` | `number \| null` | Period end timestamp |
+| `isPro` | `boolean` | Whether user has Pro plan |
+| `isActive` | `boolean` | Whether subscription is active |
+
+---
+
+#### getPlanLimits
 
 Returns the feature limits for a plan.
 
 ```ts
+import { getPlanLimits } from "@/lib/server/payment/subscription";
+
 const limits = getPlanLimits("PRO");
-// Returns: PlanLimits
 ```
 
-**Return type:**
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `planName` | `string` | Plan name |
+
+**Returns:** `PlanLimits`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `maxProjects` | `number` | Max projects (-1 = unlimited) |
+| `maxTeamMembers` | `number` | Max team members |
+| `maxStorageGB` | `number` | Max storage in GB |
+| `maxAPICallsPerMonth` | `number` | Max API calls |
+| `hasExports` | `boolean` | Export feature |
+| `hasAdvancedAnalytics` | `boolean` | Analytics feature |
+| `hasPrioritySupport` | `boolean` | Priority support |
+| `hasCustomBranding` | `boolean` | Custom branding |
+| `hasAPIAccess` | `boolean` | API access |
+| `hasWebhooks` | `boolean` | Webhooks feature |
+
+---
+
+### Pricing Utilities
+
+#### getCurrencyFromLocale
+
+Maps a locale code to the appropriate currency.
+
 ```ts
+import { getCurrencyFromLocale } from "@/lib/server/payment/pricing";
+
+const currency = getCurrencyFromLocale("pt"); // "BRL"
+const currency = getCurrencyFromLocale("en"); // "USD"
+const currency = getCurrencyFromLocale("fr"); // "EUR"
+```
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `locale` | `string` | Locale code |
+
+**Returns:** `Currency` (`"BRL" | "USD" | "EUR"`)
+
+---
+
+#### getPricingForLocale
+
+Gets pricing information for all plans in the given locale.
+
+```ts
+import { getPricingForLocale } from "@/lib/server/payment/pricing";
+
+const pricing = getPricingForLocale("en");
+// { simple: PricingInfo, pro: PricingInfo }
+```
+
+**Returns:** `PlanPricing`
+
+---
+
+#### getPricingForPlan
+
+Gets pricing information for a specific plan.
+
+```ts
+import { getPricingForPlan } from "@/lib/server/payment/pricing";
+
+const pricing = getPricingForPlan("en", "pro");
+// { currency: "USD", monthlyPrice: 15, yearlyPrice: 149.40, ... }
+```
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `locale` | `string` | Locale code |
+| `planType` | `"simple" \| "pro"` | Plan type |
+
+**Returns:** `PricingInfo`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `currency` | `Currency` | Currency code |
+| `currencySymbol` | `string` | Currency symbol |
+| `monthlyPrice` | `number` | Monthly price |
+| `yearlyPrice` | `number` | Yearly price |
+| `monthlyPriceFormatted` | `string` | Formatted monthly price |
+| `yearlyPriceFormatted` | `string` | Formatted yearly price |
+
+---
+
+#### getStripePriceId
+
+Retrieves the Stripe price ID from environment variables.
+
+```ts
+import { getStripePriceId } from "@/lib/server/payment/pricing";
+
+const priceId = getStripePriceId("pro", "USD", "monthly");
+```
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `planType` | `"simple" \| "pro"` | Plan type |
+| `currency` | `Currency` | Currency code |
+| `interval` | `"monthly" \| "yearly"` | Billing interval |
+
+**Returns:** `string`
+
+---
+
+#### getPlanTypeFromPriceId
+
+Resolves a plan type from a Stripe price ID.
+
+```ts
+import { getPlanTypeFromPriceId } from "@/lib/server/payment/pricing";
+
+const planType = getPlanTypeFromPriceId("price_xxx"); // "PRO" | "SIMPLE" | "FREE"
+```
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `priceId` | `string` | Stripe price ID |
+
+**Returns:** `PlanType` (`"FREE" | "SIMPLE" | "PRO"`)
+
+---
+
+#### formatPrice
+
+Formats a price amount with the appropriate currency symbol.
+
+```ts
+import { formatPrice } from "@/lib/server/payment/pricing";
+
+const formatted = formatPrice(15, "USD"); // "$15"
+```
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `amount` | `number` | Price amount |
+| `currency` | `Currency` | Currency code |
+
+**Returns:** `string`
+
+---
+
+### Types
+
+```ts
+type Currency = "BRL" | "USD" | "EUR";
+type Locale = "en" | "pt" | "es" | "fr" | "de" | "it";
+type PlanType = "FREE" | "SIMPLE" | "PRO";
+type BillingInterval = "monthly" | "yearly";
+
+interface PricingInfo {
+  currency: Currency;
+  currencySymbol: string;
+  monthlyPrice: number;
+  yearlyPrice: number;
+  monthlyPriceFormatted: string;
+  yearlyPriceFormatted: string;
+}
+
+interface PlanPricing {
+  simple: PricingInfo;
+  pro: PricingInfo;
+}
+
+interface SubscriptionPlan {
+  name: string;
+  description: string;
+  stripePriceId: string;
+}
+
+interface UserSubscriptionPlan extends SubscriptionPlan {
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  stripePriceId: string;
+  stripeCurrentPeriodEnd: number | null;
+  isPro: boolean;
+  isActive: boolean;
+}
+
 interface PlanLimits {
-  maxProjects: number;      // -1 = unlimited
+  maxProjects: number;
   maxTeamMembers: number;
   maxStorageGB: number;
   maxAPICallsPerMonth: number;
@@ -362,26 +488,26 @@ interface PlanLimits {
   hasAPIAccess: boolean;
   hasWebhooks: boolean;
 }
-```
 
-### createCheckout
+interface CreateCheckoutRequest {
+  plan: "simple" | "pro";
+  interval: BillingInterval;
+  locale?: string;
+}
 
-Server action to create a Stripe checkout session.
+interface CreateCheckoutResponse {
+  url: string | null;
+}
 
-```ts
-const result = await createCheckout({
-  plan: "pro",           // "simple" | "pro"
-  interval: "monthly",   // "monthly" | "yearly"
-  locale: "en",          // Optional, defaults to "en"
-});
-// Returns: { url: string | null }
-```
+interface ManageBillingResponse {
+  url: string | null;
+}
 
-### manageBilling
-
-Server action to redirect to Stripe billing portal.
-
-```ts
-const result = await manageBilling({});
-// Returns: { url: string | null }
+interface StripeWebhookEvent {
+  id: string;
+  stripeEventId: string;
+  type: string;
+  processed: boolean;
+  createdAt: Date;
+}
 ```

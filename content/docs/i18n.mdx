@@ -3,12 +3,7 @@ title: I18n
 description: Type-safe i18n for Next.js with next-international
 ---
 
-
 ## Installation
-
-<Steps>
-
-### Install from registry
 
 <Tabs items={["npm", "pnpm", "yarn", "bun"]}>
   <Tab value="npm">
@@ -36,59 +31,90 @@ description: Type-safe i18n for Next.js with next-international
   </Tab>
 </Tabs>
 
+---
+
+## What is Installed
+
+### Pages
+
+| File | Path | Description |
+|------|------|-------------|
+| `page.tsx` | `app/[locale]/[...rest]/page.tsx` | 404 catch-all page |
+
+### Components
+
+| File | Path | Description |
+|------|------|-------------|
+| `language-switcher.tsx` | `components/language-switcher.tsx` | Language picker dropdown |
+
+### Middleware
+
+| File | Path | Description |
+|------|------|-------------|
+| `middleware.ts` | `middleware.ts` | i18n middleware (needs merge if existing) |
+
+### Locales
+
+| File | Path | Description |
+|------|------|-------------|
+| `client.ts` | `locales/client.ts` | Client-side i18n setup |
+| `server.ts` | `locales/server.ts` | Server-side i18n setup |
+| `en.ts` | `locales/en.ts` | English translations |
+| `en.ts` | `locales/not-found/en.ts` | 404 page translations |
+
+---
+
+## What's Next
+
+<Steps>
+
 ### Move app files into [locale] folder
 
-**IMPORTANT**: You must move your existing app routes into a `[locale]` dynamic segment:
+Move your existing app routes into a `[locale]` dynamic segment:
 
-```bash
-# Move all routes except layout, api, and globals.css
+**Before:**
+```
 app/
-├── layout.tsx          # Move to [locale]/layout.tsx
-├── globals.css         # Keep at root
-├── api/                # Keep at root
-├── page.tsx            # Move to [locale]/page.tsx
-└── about/              # Move to [locale]/about/
+├── layout.tsx
+├── globals.css
+├── api/
+├── page.tsx
+└── about/
 ```
 
-After moving:
-
-```bash
+**After:**
+```
 app/
-
-├── globals.css         
-├── api/                
-└── [locale]/           
-	├── layout.tsx          
-    ├── page.tsx             
-    ├── about/          
-    └── [...rest]/      # 404 catch-all (installed by registry)
-        └── page.tsx
+├── globals.css         # Keep at root
+├── api/                # Keep at root
+└── [locale]/
+    ├── layout.tsx      # Move here
+    ├── page.tsx        # Move here
+    ├── about/          # Move here
+    └── [...rest]/      # Installed by registry (404)
 ```
 
 ### Update root layout
 
-Overwrite your root layout is too dangerous. So, add locale parameter support to your root layout:
+Add locale parameter support to your layout:
 
-```tsx title="app/layout.tsx" {1-2,7-11,15}
-import type { Metadata } from 'next';
+```tsx title="app/[locale]/layout.tsx"
 import type { ReactNode } from 'react';
 
 export default async function RootLayout({
-	children,
-	//receiving the locale param
-	params,
+  children,
+  params,
 }: {
-	children: ReactNode;
-	//coorect type for params in Next.js
-	params: Promise<{ locale: string }>;
+  children: ReactNode;
+  params: Promise<{ locale: string }>;
 }) {
-	const { locale } = await params;
+  const { locale } = await params;
 
-	return (		
-		<html lang={locale} suppressHydrationWarning>
-			<body>{children}</body>
-		</html>
-	);
+  return (
+    <html lang={locale} suppressHydrationWarning>
+      <body>{children}</body>
+    </html>
+  );
 }
 ```
 
@@ -101,381 +127,320 @@ import { createI18nMiddleware } from 'next-international/middleware';
 import { NextResponse, type NextRequest } from 'next/server';
 
 const I18nMiddleware = createI18nMiddleware({
-	locales: ['en'],
-	defaultLocale: 'en',
-	urlMappingStrategy: 'rewrite',
+  locales: ['en'],
+  defaultLocale: 'en',
+  urlMappingStrategy: 'rewrite',
 });
 
 export function middleware(request: NextRequest) {
-	// Run i18n middleware first
-	const i18nResponse = I18nMiddleware(request);
-	if (i18nResponse) return i18nResponse;
+  // Run i18n middleware first
+  const i18nResponse = I18nMiddleware(request);
+  if (i18nResponse) return i18nResponse;
 
-	// Your custom middleware logic here
-	// ...
-
-	return NextResponse.next();
+  // Your custom middleware logic here
+  return NextResponse.next();
 }
 
 export const config = {
-	matcher: ['/((?!api|_next|.*\\..*).*)'],
+  matcher: ['/((?!api|_next|.*\\..*).*)'],
 };
 ```
 
-</Steps>
+### Test the installation
 
-## Usage
-
-### Server Components
-
-Use `getScopedI18n` for namespace-based translations in Server Components:
-
-```tsx title="app/[locale]/page.tsx"
-import { getScopedI18n } from '@/locales/server';
-
-export default async function HomePage() {
-	const t = await getScopedI18n('notFound');
-
-	return (
-		<div>
-			<h1>{t('title')}</h1>
-			<p>{t('description')}</p>
-		</div>
-	);
-}
-```
-
-### Client Components
-
-Use `useScopedI18n` for Client Components:
-
-```tsx title="components/example.tsx"
-'use client';
-
-import { useScopedI18n } from '@/locales/client';
-
-export function Example() {
-	const t = useScopedI18n('notFound');
-
-	return <p>{t('description')}</p>;
-}
-```
-
-### Metadata & SEO
-
-Generate localized metadata for better SEO:
-
-```tsx title="app/[locale]/about/page.tsx"
-import { getScopedI18n } from '@/locales/server';
-import type { Metadata } from 'next';
-
-export async function generateMetadata(): Promise<Metadata> {
-	const t = await getScopedI18n('about');
-
-	return {
-		title: t('title'),
-		description: t('description'),
-	};
-}
-
-export default async function AboutPage() {
-	const t = await getScopedI18n('about');
-
-	return <h1>{t('title')}</h1>;
-}
-```
-
-### Language Switcher
-
-Add the language switcher component to your layout or navigation:
-
-```tsx title="components/navigation.tsx"
-import { LanguageSwitcher } from '@/components/language-switcher';
-
-export function Navigation() {
-	return (
-		<nav>
-			{/* Your navigation items */}
-			<LanguageSwitcher />
-		</nav>
-	);
-}
-```
-
-## Adding More Locales
-
-The registry ships with English only. To add Portuguese (or any other language):
-
-<Steps>
-
-### Create locale translation files
-
-```tsx title="locales/pt.ts"
-import notFound from './not-found/pt';
-
-export default {
-	notFound,
-} as const;
-```
-
-```tsx title="locales/not-found/pt.ts"
-export default {
-	title: 'Página Não Encontrada',
-	description: 'A página que você procura não existe ou foi movida.',
-	backHome: 'Voltar para Início',
-} as const;
-```
-
-### Update client setup
-
-```tsx title="locales/client.ts" {9}
-'use client';
-
-import { createI18nClient } from 'next-international/client';
-
-export const { useI18n, useScopedI18n, I18nProviderClient, useCurrentLocale, useChangeLocale } =
-	createI18nClient({
-		en: () => import('./en'),
-		pt: () => import('./pt'), // Add this
-	});
-```
-
-### Update server setup
-
-```tsx title="locales/server.ts" {6}
-import { createI18nServer } from 'next-international/server';
-
-export const { getI18n, getScopedI18n, getStaticParams, getCurrentLocale } = createI18nServer({
-	en: () => import('./en'),
-	pt: () => import('./pt'), // Add this
-});
-```
-
-### Update middleware
-
-```tsx title="middleware.ts" {5,6}
-import { createI18nMiddleware } from 'next-international/middleware';
-
-const I18nMiddleware = createI18nMiddleware({
-	locales: ['en', 'pt'], // Add new locale
-	defaultLocale: 'en',
-	urlMappingStrategy: 'rewrite',
-});
-
-export function middleware(request: NextRequest) {
-	return I18nMiddleware(request);
-}
-
-export const config = {
-	matcher: ['/((?!api|_next|.*\\..*).*)'],
-};
-```
-
-### Update language switcher
-
-```tsx title="components/language-switcher.tsx" {9}
-'use client';
-
-import { useCurrentLocale, useChangeLocale } from '@/locales/client';
-import { Languages } from 'lucide-react';
-
-const locales = [
-	{ code: 'en', name: 'English', flag: '🇺🇸' },
-	{ code: 'pt', name: 'Português', flag: '🇧🇷' }, // Add this
-];
-
-export function LanguageSwitcher() {
-	// ...component code
-}
-```
+Navigate to `/` and verify translations load correctly.
 
 </Steps>
 
-## Translation Organization
-
-### Namespace Pattern
-
-Organize translations by feature for better maintainability:
-
-```
-locales/
-├── client.ts              # Client-side setup
-├── server.ts              # Server-side setup
-├── en.ts                  # Main English translations
-├── pt.ts                  # Main Portuguese translations
-├── not-found/             # 404 pages
-│   ├── en.ts
-│   └── pt.ts
-├── auth/                  # Authentication
-│   ├── en.ts
-│   └── pt.ts
-└── dashboard/             # Dashboard
-    ├── en.ts
-    └── pt.ts
-```
-
-### Example: Adding Auth Namespace
-
-1. Create translation files:
-
-```tsx title="locales/auth/en.ts"
-export default {
-	login: 'Log in',
-	logout: 'Log out',
-	email: 'Email address',
-	password: 'Password',
-	forgotPassword: 'Forgot password?',
-	noAccount: "Don't have an account?",
-	signUp: 'Sign up',
-} as const;
-```
-
-2. Import in main locale file:
-
-```tsx title="locales/en.ts" {1,4}
-import auth from './auth/en';
-import notFound from './not-found/en';
-
-export default {
-	auth,
-	notFound,
-} as const;
-```
-
-3. Use in components:
-
-```tsx title="app/[locale]/login/page.tsx"
-import { getScopedI18n } from '@/locales/server';
-
-export default async function LoginPage() {
-	const t = await getScopedI18n('auth');
-
-	return (
-		<form>
-			<label>{t('email')}</label>
-			<input type="email" />
-			<button>{t('login')}</button>
-		</form>
-	);
-}
-```
+---
 
 ## API Reference
 
 ### Server Functions
 
-| Function | Description | Example |
-|----------|-------------|---------|
-| `getI18n()` | Get full translation object | `const t = await getI18n(); t('notFound.title')` |
-| `getScopedI18n(namespace)` | Get scoped translator for a namespace | `const t = await getScopedI18n('auth'); t('login')` |
-| `getCurrentLocale()` | Get current locale code | `const locale = await getCurrentLocale(); // 'en'` |
-| `getStaticParams()` | Get all locales for static generation | `export const generateStaticParams = getStaticParams();` |
+#### getI18n
+
+Gets the full translation object for server-side usage.
+
+```tsx
+import { getI18n } from '@/locales/server';
+
+export default async function Page() {
+  const t = await getI18n();
+  return <h1>{t('notFound.title')}</h1>;
+}
+```
+
+**Returns:** `Promise<(key: string) => string>`
+
+---
+
+#### getScopedI18n
+
+Gets a scoped translator for a specific namespace.
+
+```tsx
+import { getScopedI18n } from '@/locales/server';
+
+export default async function Page() {
+  const t = await getScopedI18n('notFound');
+  return <h1>{t('title')}</h1>;
+}
+```
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `namespace` | `string` | Translation namespace |
+
+**Returns:** `Promise<(key: string) => string>`
+
+---
+
+#### getCurrentLocale
+
+Gets the current locale code.
+
+```tsx
+import { getCurrentLocale } from '@/locales/server';
+
+export default async function Page() {
+  const locale = await getCurrentLocale();
+  console.log(locale); // 'en'
+}
+```
+
+**Returns:** `Promise<string>`
+
+---
+
+#### getStaticParams
+
+Gets all locales for static generation.
+
+```tsx
+import { getStaticParams } from '@/locales/server';
+
+export const generateStaticParams = getStaticParams();
+```
+
+**Returns:** `() => { locale: string }[]`
+
+---
 
 ### Client Hooks
 
-| Hook | Description | Example |
-|------|-------------|---------|
-| `useI18n()` | Get full translation object | `const t = useI18n(); t('notFound.title')` |
-| `useScopedI18n(namespace)` | Get scoped translator | `const t = useScopedI18n('auth'); t('login')` |
-| `useCurrentLocale()` | Get current locale code | `const locale = useCurrentLocale(); // 'en'` |
-| `useChangeLocale()` | Change locale function | `const changeLocale = useChangeLocale(); changeLocale('pt')` |
+#### useI18n
 
-## Advanced Patterns
-
-### Dynamic Locale Routes
-
-Access locale in page components:
-
-```tsx title="app/[locale]/posts/[id]/page.tsx"
-export default async function PostPage({
-	params,
-}: {
-	params: Promise<{ locale: string; id: string }>;
-}) {
-	const { locale, id } = await params;
-	const t = await getScopedI18n('posts');
-
-	return <h1>{t('title', { id })}</h1>;
-}
-```
-
-### API Routes with Locale
-
-While API routes don't use the `[locale]` segment, you can still access locale:
-
-```tsx title="app/api/posts/route.ts"
-import { getCurrentLocale } from '@/locales/server';
-import { NextRequest } from 'next/server';
-
-export async function GET(request: NextRequest) {
-	// Locale from header or cookie
-	const locale = request.headers.get('accept-language')?.split(',')[0] || 'en';
-
-	// Use locale for data fetching
-	const posts = await fetchPosts(locale);
-
-	return Response.json(posts);
-}
-```
-
-### Server Actions with Translations
-
-```tsx title="app/[locale]/contact/actions.ts"
-'use server';
-
-import { getScopedI18n } from '@/locales/server';
-
-export async function submitContactForm(formData: FormData) {
-	const t = await getScopedI18n('contact');
-
-	// Validation with translated error messages
-	if (!formData.get('email')) {
-		return { error: t('errors.emailRequired') };
-	}
-
-	// Process form...
-
-	return { success: t('success.messageSent') };
-}
-```
-
-## Troubleshooting
-
-### Translations not updating after adding locale
-
-Clear Next.js cache and restart dev server:
-
-```bash
-rm -rf .next
-pnpm dev
-```
-
-### Middleware conflicts
-
-If you see errors about multiple middleware exports, ensure you're merging middlewares correctly (see installation step 4).
-
-### Type errors with translation keys
-
-Ensure you're using `as const` in your translation files:
+Gets the full translation object for client-side usage.
 
 ```tsx
-// ✅ Correct
-export default {
-	title: 'Hello',
-} as const;
+'use client';
 
-// ❌ Wrong
-export default {
-	title: 'Hello',
-};
+import { useI18n } from '@/locales/client';
+
+export function Component() {
+  const t = useI18n();
+  return <p>{t('notFound.title')}</p>;
+}
 ```
 
-### 404 page not showing translated content
+**Returns:** `(key: string) => string`
 
-Verify your `app/[locale]/[...rest]/page.tsx` file exists and is using `getScopedI18n('notFound')`.
+---
 
-## Resources
+#### useScopedI18n
 
-- [next-international Documentation](https://next-international.vercel.app/)
-- [Next.js Internationalization](https://nextjs.org/docs/app/building-your-application/routing/internationalization)
-- [IETF Language Tags](https://en.wikipedia.org/wiki/IETF_language_tag)
+Gets a scoped translator for a specific namespace.
+
+```tsx
+'use client';
+
+import { useScopedI18n } from '@/locales/client';
+
+export function Component() {
+  const t = useScopedI18n('notFound');
+  return <p>{t('title')}</p>;
+}
+```
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `namespace` | `string` | Translation namespace |
+
+**Returns:** `(key: string) => string`
+
+---
+
+#### useCurrentLocale
+
+Gets the current locale code.
+
+```tsx
+'use client';
+
+import { useCurrentLocale } from '@/locales/client';
+
+export function Component() {
+  const locale = useCurrentLocale();
+  return <p>Current: {locale}</p>;
+}
+```
+
+**Returns:** `string`
+
+---
+
+#### useChangeLocale
+
+Returns a function to change the current locale.
+
+```tsx
+'use client';
+
+import { useChangeLocale } from '@/locales/client';
+
+export function LanguageButton() {
+  const changeLocale = useChangeLocale();
+
+  return (
+    <button onClick={() => changeLocale('pt')}>
+      Switch to Portuguese
+    </button>
+  );
+}
+```
+
+**Returns:** `(locale: string) => void`
+
+---
+
+#### I18nProviderClient
+
+Provider component for client-side i18n context.
+
+```tsx
+'use client';
+
+import { I18nProviderClient } from '@/locales/client';
+
+export function Providers({ children, locale }: { children: React.ReactNode; locale: string }) {
+  return (
+    <I18nProviderClient locale={locale}>
+      {children}
+    </I18nProviderClient>
+  );
+}
+```
+
+**Props:**
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `locale` | `string` | Current locale code |
+| `children` | `ReactNode` | Child components |
+
+---
+
+### Middleware
+
+#### createI18nMiddleware
+
+Creates the i18n middleware for locale detection and routing.
+
+```tsx
+import { createI18nMiddleware } from 'next-international/middleware';
+
+const I18nMiddleware = createI18nMiddleware({
+  locales: ['en', 'pt'],
+  defaultLocale: 'en',
+  urlMappingStrategy: 'rewrite',
+});
+```
+
+**Options:**
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `locales` | `string[]` | Supported locales |
+| `defaultLocale` | `string` | Default/fallback locale |
+| `urlMappingStrategy` | `'rewrite' \| 'redirect'` | URL handling strategy |
+
+---
+
+### Translation File Structure
+
+Translation files export a constant object with `as const`:
+
+```tsx title="locales/en.ts"
+import notFound from './not-found/en';
+
+export default {
+  notFound,
+} as const;
+```
+
+```tsx title="locales/not-found/en.ts"
+export default {
+  title: 'Page Not Found',
+  description: 'The page you are looking for does not exist.',
+  backHome: 'Back to Home',
+} as const;
+```
+
+**Type Safety Requirements:**
+
+- Always use `as const` for type inference
+- Namespace imports must match across all locales
+- Keys must be identical across all locale files
+
+---
+
+### Adding a New Locale
+
+To add a new locale (e.g., Portuguese):
+
+1. Create locale files:
+```tsx title="locales/pt.ts"
+import notFound from './not-found/pt';
+
+export default {
+  notFound,
+} as const;
+```
+
+2. Update `locales/client.ts`:
+```tsx
+export const { ... } = createI18nClient({
+  en: () => import('./en'),
+  pt: () => import('./pt'),
+});
+```
+
+3. Update `locales/server.ts`:
+```tsx
+export const { ... } = createI18nServer({
+  en: () => import('./en'),
+  pt: () => import('./pt'),
+});
+```
+
+4. Update `middleware.ts`:
+```tsx
+const I18nMiddleware = createI18nMiddleware({
+  locales: ['en', 'pt'],
+  defaultLocale: 'en',
+  urlMappingStrategy: 'rewrite',
+});
+```
+
+5. Update `components/language-switcher.tsx`:
+```tsx
+const locales = [
+  { code: 'en', name: 'English', flag: '🇺🇸' },
+  { code: 'pt', name: 'Português', flag: '🇧🇷' },
+];
+```

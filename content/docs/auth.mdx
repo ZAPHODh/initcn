@@ -3,12 +3,7 @@ title: OTP
 description: Production-ready OTP authentication for Next.js applications
 ---
 
-
 ## Installation
-
-<Steps>
-
-### Install from registry
 
 <Tabs items={["npm", "pnpm", "yarn", "bun"]}>
   <Tab value="npm">
@@ -36,13 +31,108 @@ description: Production-ready OTP authentication for Next.js applications
   </Tab>
 </Tabs>
 
-This installs:
-- **auth-otp-shared** (auto-installed) - UI components, utilities, types
-- **auth-otp-prisma** - Database operations, email, rate limiting, OAuth, routes, pages
+---
 
-### Set up database
+## What is Installed
 
-Copy the Prisma schema from `lib/auth-otp-prisma/schemas/prisma.schema` to your `prisma/schema.prisma`:
+### Pages
+
+| File | Path | Description |
+|------|------|-------------|
+| `page.tsx` | `app/(auth)/login/page.tsx` | Login page with OTP form |
+| `page.tsx` | `app/@modal/(.)login/page.tsx` | Modal interceptor for login |
+| `default.tsx` | `app/@modal/default.tsx` | Default modal slot |
+
+### API Routes
+
+| File | Path | Description |
+|------|------|-------------|
+| `route.ts` | `app/api/auth/login/send-otp/route.ts` | Send OTP endpoint |
+| `route.ts` | `app/api/auth/login/verify-otp/route.ts` | Verify OTP endpoint |
+| `route.ts` | `app/api/auth/login/google/route.ts` | Google OAuth initiation |
+| `route.ts` | `app/api/auth/login/google/callback/route.ts` | Google OAuth callback |
+
+### Server Actions
+
+| File | Path | Description |
+|------|------|-------------|
+| `send-otp.ts` | `app/actions/send-otp.ts` | Send OTP server action |
+| `verify-otp.ts` | `app/actions/verify-otp.ts` | Verify OTP server action |
+| `logout.ts` | `app/actions/logout.ts` | Logout server action |
+| `diagnostics.ts` | `app/actions/diagnostics.ts` | Health check action |
+
+### Components
+
+| File | Path | Description |
+|------|------|-------------|
+| `auth-form.tsx` | `components/auth-form.tsx` | API-based auth form |
+| `auth-form-server-action.tsx` | `components/auth-form-server-action.tsx` | Server Action auth form |
+| `login-dialog.tsx` | `components/login-dialog.tsx` | Modal login dialog |
+| `diagnostics-panel.tsx` | `components/diagnostics-panel.tsx` | Dev diagnostics UI |
+
+### Server Utilities
+
+| File | Path | Description |
+|------|------|-------------|
+| `session.ts` | `lib/server/auth/session.ts` | Session management |
+| `google.ts` | `lib/server/auth/google.ts` | Google OAuth setup |
+| `otp.ts` | `lib/server/auth/otp.ts` | OTP generation utilities |
+| `cookies.ts` | `lib/server/auth/cookies.ts` | Cookie management |
+| `utils.ts` | `lib/server/auth/utils.ts` | Email validation, IP extraction |
+| `middleware.ts` | `lib/server/auth/middleware.ts` | Auth middleware helpers |
+| `db.ts` | `lib/server/auth/db.ts` | Prisma client instance |
+| `mail.ts` | `lib/server/auth/mail.ts` | Email sending (Resend) |
+| `rate-limit.ts` | `lib/server/auth/rate-limit.ts` | Rate limiting (Upstash) |
+| `types.ts` | `lib/server/auth/types.ts` | TypeScript types |
+
+### Client Utilities
+
+| File | Path | Description |
+|------|------|-------------|
+| `safe-action.ts` | `lib/client/safe-action.ts` | next-safe-action client |
+
+### Other Files
+
+| File | Path | Description |
+|------|------|-------------|
+| `otp-email.tsx` | `emails/otp-email.tsx` | React Email template |
+| `prisma.schema` | `lib/server/auth/schemas/prisma.schema` | Prisma schema (copy manually) |
+| `.env.example.otp` | `.env.example.otp` | Environment variables template |
+
+---
+
+## What's Next
+
+<Steps>
+
+### Add environment variables
+
+Copy the installed `.env.example.otp` to your `.env.local`:
+
+```bash
+cat .env.example.otp >> .env.local
+```
+
+Then configure:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `RESEND_API_KEY` | Production | Resend API key for emails |
+| `AUTH_EMAIL_FROM` | Production | Sender email address |
+| `UPSTASH_REDIS_REST_URL` | Production | Upstash Redis URL |
+| `UPSTASH_REDIS_REST_TOKEN` | Production | Upstash Redis token |
+| `GOOGLE_CLIENT_ID` | Yes | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Yes | Google OAuth client secret |
+| `GOOGLE_REDIRECT_URI` | Yes | OAuth callback URL |
+
+<Callout type="info">
+**Development mode:** In development, emails are logged to console and rate limiting uses in-memory storage. Just set `DATABASE_URL` and `GOOGLE_*` variables to get started.
+</Callout>
+
+### Add Prisma schema
+
+Copy the schema from `lib/server/auth/schemas/prisma.schema` to your `prisma/schema.prisma`:
 
 ```prisma
 model User {
@@ -90,42 +180,6 @@ npx prisma generate
 npx prisma db push
 ```
 
-### Configure environment variables
-
-An `.env.example.otp` file was installed with the registry. Copy it to `.env.local`:
-
-```bash
-cat .env.example.otp >> .env.local
-```
-
-Or create `.env.local` manually:
-
-```bash
-# Database
-DATABASE_URL="postgresql://user:password@localhost:5432/mydb"
-
-# Resend (optional in dev - uses console.log)
-RESEND_API_KEY="re_..."
-AUTH_EMAIL_FROM="Auth <auth@yourdomain.com>"
-
-# Upstash Redis (optional in dev - uses in-memory)
-UPSTASH_REDIS_REST_URL="https://..."
-UPSTASH_REDIS_REST_TOKEN="..."
-
-# Google OAuth
-GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET="your-client-secret"
-GOOGLE_REDIRECT_URI="http://localhost:3000/api/auth/login/google/callback"
-```
-
-<Callout type="info">
-**Development mode:** Set `NODE_ENV=development` and the system automatically:
-- Uses console.log for emails (no Resend needed)
-- Uses in-memory storage for rate limiting (no Redis needed)
-
-Just set `DATABASE_URL` and `GOOGLE_*` variables to get started!
-</Callout>
-
 ### Set up Google OAuth
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
@@ -135,383 +189,460 @@ Just set `DATABASE_URL` and `GOOGLE_*` variables to get started!
 5. Add redirect URI: `http://localhost:3000/api/auth/login/google/callback`
 6. Copy Client ID and Secret to `.env.local`
 
-### Done!
+### Test the installation
 
-Navigate to `/login` to test authentication. The system includes:
-
-- API routes at `/api/auth/login/*`
-- Login page at `/login`
-- Modal login interceptor
-- Session management
-- Logout action
+Navigate to `/login` to verify everything works.
 
 </Steps>
 
 ---
 
-## Server Actions vs API Routes
-
-This implementation provides **both** Server Actions and API Routes for maximum flexibility. Choose based on your needs:
-
-### Server Actions (Recommended for New Code)
-
-**Use when:**
-- Building forms with progressive enhancement
-- Want automatic loading/error states
-- Prefer type-safe actions with Zod validation
-- Need seamless integration with React 19's `useActionState`
-
-```tsx
-"use client";
-
-import { AuthFormServerAction } from "@/components/auth-form-server-action";
-import { sendOTPAction, verifyOTPAction } from "@/app/actions/send-otp";
-
-export default function LoginPage() {
-  return <AuthFormServerAction sendOTPAction={sendOTPAction} verifyOTPAction={verifyOTPAction} />;
-}
-```
-
-**Benefits:**
-- Progressive enhancement (works without JS)
-- Automatic loading states via `useActionState`
-- Type-safe with Zod schemas
-- Direct integration with Next.js caching/revalidation
-
-### API Routes
-
-**Use when:**
-- Need REST API endpoints for external clients
-- Building mobile apps or third-party integrations
-- Require explicit HTTP status codes and headers
-- Prefer traditional fetch-based patterns
-
-```tsx
-"use client";
-
-import { AuthForm } from "@/components/auth-form";
-
-export default function LoginPage() {
-  return <AuthForm redirectTo="/dashboard" />;
-}
-```
-
-**Both patterns are fully supported** - use whichever fits your architecture best!
-
----
-
-## Performance Optimizations
-
-### Request Memoization with `cache()`
-
-The `getCurrentSession()` function uses React's `cache()` to prevent redundant database queries:
-
-```tsx
-import { cache } from "react";
-
-export const getCurrentSession = cache(async () => {
-  const token = await getSessionTokenCookie(SESSION_COOKIE_NAME);
-  if (!token) return { session: null, user: null };
-  return validateSessionToken(token);
-});
-```
-
-**What this means:**
-- Calling `getCurrentSession()` multiple times in the same request = **1 database query**
-- Works across Server Components, Server Actions, and middleware
-- Automatic deduplication per-request
-
-**Example:**
-```tsx
-// All three calls share the same cached result
-const { user } = await getCurrentSession();  // DB query
-const { session } = await getCurrentSession();  // Cached!
-const result = await getCurrentSession();  // Cached!
-```
-
----
-
-## Usage
-
-### Protect a page
-
-```tsx
-import { getCurrentSession } from "@/lib/auth-otp-prisma";
-import { redirect } from "next/navigation";
-
-export default async function DashboardPage() {
-  const { user, session } = await getCurrentSession();
-
-  if (!session) {
-    redirect("/login");
-  }
-
-  return (
-    <div>
-      <h1>Dashboard</h1>
-      <p>Hello {user.email}</p>
-      {user.name && <p>Welcome back, {user.name}!</p>}
-    </div>
-  );
-}
-```
-
-### Protect a server action
-
-```tsx
-"use server";
-
-import { authActionClient } from "@/lib/auth-otp-prisma";
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
-
-const schema = z.object({
-  title: z.string().min(1),
-  content: z.string(),
-});
-
-export const createPost = authActionClient
-  .schema(schema)
-  .action(async ({ ctx, parsedInput }) => {
-    // ctx.user, ctx.userId, ctx.sessionId are automatically available
-    // Action only runs if user is authenticated
-
-    const post = await prisma.post.create({
-      data: {
-        ...parsedInput,
-        authorId: ctx.userId,
-      },
-    });
-
-    revalidatePath("/posts");
-    return { post };
-  });
-```
-
-### Manual session validation
-
-```tsx
-import { validateSessionToken } from "@/lib/auth-otp-prisma";
-
-export async function GET(request: Request) {
-  const token = request.cookies.get("session")?.value;
-
-  if (!token) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { user, session } = await validateSessionToken(token);
-
-  if (!session) {
-    return Response.json({ error: "Invalid session" }, { status: 401 });
-  }
-
-  return Response.json({ user });
-}
-```
-
-### Logout user
-
-```tsx
-"use client";
-
-import { logout } from "@/lib/auth-otp-prisma";
-import { useAction } from "next-safe-action/hooks";
-import { Button } from "@/components/ui/button";
-
-export function LogoutButton() {
-  const { execute, isExecuting } = useAction(logout);
-
-  return (
-    <Button onClick={() => execute()} disabled={isExecuting}>
-      {isExecuting ? "Logging out..." : "Logout"}
-    </Button>
-  );
-}
-```
-
-### Get current user in client component
-
-```tsx
-"use client";
-
-import { useEffect, useState } from "react";
-import type { User } from "@/lib/auth-otp-shared/types";
-
-export function UserProfile() {
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    fetch("/api/user")
-      .then((res) => res.json())
-      .then(setUser);
-  }, []);
-
-  if (!user) return <div>Loading...</div>;
-
-  return (
-    <div>
-      <p>{user.email}</p>
-      {user.picture && <img src={user.picture} alt={user.name || "User"} />}
-    </div>
-  );
-}
-```
-
----
-
-## Customization
-
-### Change email template
-
-Edit `emails/otp-email.tsx` to customize the OTP email:
-
-```tsx
-import { Html, Head, Body, Container, Text, Button } from "@react-email/components";
-
-export default function OTPEmail({ code, userName }: { code: string; userName?: string }) {
-  return (
-    <Html>
-      <Head />
-      <Body>
-        <Container>
-          <Text>Hi {userName || "there"}!</Text>
-          <Text>Your verification code is:</Text>
-          <Text style={{ fontSize: 32, fontWeight: "bold" }}>{code}</Text>
-          <Text>This code will expire in 3 minutes.</Text>
-        </Container>
-      </Body>
-    </Html>
-  );
-}
-```
-
-### Adjust rate limits
-
-Edit constants in the API route files:
-
-```ts
-// api/auth/login/send-otp/route.ts
-const OTP_LENGTH = 6;
-const OTP_EXPIRY_MINUTES = 3;
-const EMAIL_RATE_LIMIT = { requests: 3, window: "15 m" as const };
-const IP_RATE_LIMIT = { requests: 20, window: "15 m" as const };
-```
-
-```ts
-// api/auth/login/verify-otp/route.ts
-const MAX_FAILED_ATTEMPTS = 10;
-const FAILED_ATTEMPTS_WINDOW_SECONDS = 3600;
-const EMAIL_RATE_LIMIT = { requests: 10, window: "15 m" as const };
-const IP_RATE_LIMIT = { requests: 50, window: "15 m" as const };
-```
-
-### Modify session expiry
-
-Edit `lib/auth-otp-prisma/server/session.ts`:
-
-```ts
-export const SESSION_EXPIRY_DAYS = 30;           // Sessions last 30 days
-export const SESSION_RENEWAL_THRESHOLD_DAYS = 15; // Renew if < 15 days left
-export const SESSION_COOKIE_NAME = "session";    // Cookie name
-```
-
-### Change redirect after login
-
-Edit the callback route at `api/auth/login/google/callback/route.ts`:
-
-```ts
-// Change this line:
-return Response.redirect(new URL("/dashboard", request.url));
-
-// To redirect elsewhere:
-return Response.redirect(new URL("/your-path", request.url));
-```
-
-### Add more OAuth providers
-
-The system supports any OAuth provider via [Arctic](https://arctic.js.org). Add new providers:
-
-1. Install Arctic provider (if needed)
-2. Create provider setup in `lib/auth-otp-prisma/server/`
-3. Create route handlers in `api/auth/login/[provider]/`
-
-Example for GitHub:
-
-```ts
-// lib/auth-otp-prisma/server/github.ts
-import { GitHub } from "arctic";
-
-export const github = new GitHub(
-  process.env.GITHUB_CLIENT_ID!,
-  process.env.GITHUB_CLIENT_SECRET!,
-  process.env.GITHUB_REDIRECT_URI!
-);
-```
-
----
-
 ## API Reference
+
+### Server Actions
+
+#### sendOTPAction
+
+Sends a one-time password to the user's email.
+
+```ts
+import { sendOTPAction } from "@/app/actions/send-otp";
+
+const result = await sendOTPAction({ email: "user@example.com" });
+```
+
+**Input:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `email` | `string` | Yes | User's email address |
+
+**Returns:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `success` | `boolean` | Whether OTP was sent |
+| `message` | `string` | Success message |
+| `error` | `string?` | Error message if failed |
+| `rateLimit` | `object?` | Rate limit info if throttled |
+
+---
+
+#### verifyOTPAction
+
+Verifies the OTP and creates a session.
+
+```ts
+import { verifyOTPAction } from "@/app/actions/verify-otp";
+
+const result = await verifyOTPAction({ email: "user@example.com", code: "123456" });
+```
+
+**Input:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `email` | `string` | Yes | User's email address |
+| `code` | `string` | Yes | 6-digit OTP code |
+
+**Returns:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `success` | `boolean` | Whether verification succeeded |
+| `error` | `string?` | Error message if failed |
+| `attemptsRemaining` | `number?` | Failed attempts remaining before lockout |
+| `rateLimit` | `object?` | Rate limit info if throttled |
+
+---
+
+#### logout
+
+Invalidates the current session and redirects to home.
+
+```ts
+import { logout } from "@/app/actions/logout";
+import { useAction } from "next-safe-action/hooks";
+
+const { execute } = useAction(logout);
+execute();
+```
+
+**Context (provided by authActionClient):**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `ctx.user` | `User` | Current user object |
+| `ctx.userId` | `string` | Current user ID |
+| `ctx.sessionId` | `string` | Current session ID |
+
+---
 
 ### Session Management
 
-| Function | Description | Returns |
-|----------|-------------|---------|
-| `getCurrentSession()` | Get current session from cookies (server-side) | `Promise<SessionValidationResult>` |
-| `validateSessionToken(token)` | Validate and renew session token | `Promise<SessionValidationResult>` |
-| `createSession(token, userId)` | Create new session for user | `Promise<Session>` |
-| `invalidateSession(sessionId)` | Delete session by ID | `Promise<void>` |
-| `invalidateAllUserSessions(userId)` | Delete all sessions for user | `Promise<void>` |
-| `generateSessionToken()` | Generate cryptographically secure token | `string` |
+#### getCurrentSession
 
-### Database Operations
+Gets the current user session from cookies. Memoized per request with React's `cache()`.
 
-| Function | Description | Returns |
-|----------|-------------|---------|
-| `prisma` | Prisma client instance | `PrismaClient` |
+```ts
+import { getCurrentSession } from "@/lib/server/auth";
 
-### Email Service
+const { user, session } = await getCurrentSession();
+```
 
-| Function | Description | Returns |
-|----------|-------------|---------|
-| `sendOTP({ to, code, userName })` | Send OTP email (console in dev) | `Promise<void>` |
+**Returns:** `Promise<SessionValidationResult>`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `user` | `User \| null` | User object if authenticated |
+| `session` | `Session \| null` | Session object if valid |
+
+---
+
+#### validateSessionToken
+
+Validates a session token and returns user/session. Automatically renews if expiring soon.
+
+```ts
+import { validateSessionToken } from "@/lib/server/auth";
+
+const { user, session } = await validateSessionToken(token);
+```
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `token` | `string` | Session token from cookie |
+
+**Returns:** `Promise<SessionValidationResult>`
+
+---
+
+#### createSession
+
+Creates a new session for a user.
+
+```ts
+import { createSession } from "@/lib/server/auth";
+
+const session = await createSession(token, userId);
+```
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `token` | `string` | Session token |
+| `userId` | `string` | User ID |
+
+**Returns:** `Promise<Session>`
+
+---
+
+#### invalidateSession
+
+Deletes a session by ID.
+
+```ts
+import { invalidateSession } from "@/lib/server/auth";
+
+await invalidateSession(sessionId);
+```
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `sessionId` | `string` | Session ID to invalidate |
+
+---
+
+#### invalidateAllUserSessions
+
+Deletes all sessions for a user. Useful for "logout everywhere".
+
+```ts
+import { invalidateAllUserSessions } from "@/lib/server/auth";
+
+await invalidateAllUserSessions(userId);
+```
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `userId` | `string` | User ID |
+
+---
+
+#### generateSessionToken
+
+Generates a cryptographically secure session token.
+
+```ts
+import { generateSessionToken } from "@/lib/server/auth";
+
+const token = generateSessionToken();
+```
+
+**Returns:** `string`
+
+---
+
+### OTP Utilities
+
+#### generateOTP
+
+Generates a random numeric OTP.
+
+```ts
+import { generateOTP } from "@/lib/server/auth";
+
+const code = generateOTP(6); // "482937"
+```
+
+**Parameters:**
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `length` | `number` | `6` | OTP length |
+
+**Returns:** `string`
+
+---
+
+#### getOTPExpiry
+
+Gets the expiry date for an OTP.
+
+```ts
+import { getOTPExpiry } from "@/lib/server/auth";
+
+const expiresAt = getOTPExpiry(3); // 3 minutes from now
+```
+
+**Parameters:**
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `minutes` | `number` | `3` | Minutes until expiry |
+
+**Returns:** `Date`
+
+---
+
+#### isOTPExpired
+
+Checks if an OTP has expired.
+
+```ts
+import { isOTPExpired } from "@/lib/server/auth";
+
+const expired = isOTPExpired(verificationCode.expiresAt);
+```
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `expiresAt` | `Date` | OTP expiry date |
+
+**Returns:** `boolean`
+
+---
+
+### Cookie Utilities
+
+#### setSessionTokenCookie
+
+Sets the session cookie.
+
+```ts
+import { setSessionTokenCookie } from "@/lib/server/auth";
+
+await setSessionTokenCookie(token, expiresAt, "session");
+```
+
+**Parameters:**
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `token` | `string` | - | Session token |
+| `expiresAt` | `Date` | - | Cookie expiry |
+| `name` | `string` | `"session"` | Cookie name |
+
+---
+
+#### getSessionTokenCookie
+
+Gets the session cookie value.
+
+```ts
+import { getSessionTokenCookie } from "@/lib/server/auth";
+
+const token = await getSessionTokenCookie("session");
+```
+
+**Parameters:**
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `name` | `string` | `"session"` | Cookie name |
+
+**Returns:** `Promise<string | undefined>`
+
+---
+
+#### deleteSessionTokenCookie
+
+Deletes the session cookie.
+
+```ts
+import { deleteSessionTokenCookie } from "@/lib/server/auth";
+
+await deleteSessionTokenCookie();
+```
+
+---
+
+### Validation Utilities
+
+#### validateEmail
+
+Validates email format.
+
+```ts
+import { validateEmail } from "@/lib/server/auth";
+
+const isValid = validateEmail("user@example.com"); // true
+```
+
+**Returns:** `boolean`
+
+---
+
+#### normalizeEmail
+
+Normalizes email to lowercase and trims whitespace.
+
+```ts
+import { normalizeEmail } from "@/lib/server/auth";
+
+const email = normalizeEmail("  User@Example.COM  "); // "user@example.com"
+```
+
+**Returns:** `string`
+
+---
+
+#### extractClientIP
+
+Extracts client IP from request headers.
+
+```ts
+import { extractClientIP } from "@/lib/server/auth";
+
+const ip = extractClientIP(request);
+```
+
+**Returns:** `string`
+
+---
 
 ### Rate Limiting
 
-| Function | Description | Returns |
-|----------|-------------|---------|
-| `rateLimitByEmail(email, requests, window)` | Check rate limit by email | `Promise<RateLimitResult>` |
-| `rateLimitByIP(ip, requests, window)` | Check rate limit by IP | `Promise<RateLimitResult>` |
-| `trackFailedAttempt(key, max, windowSec)` | Track failed verification attempt | `Promise<FailedAttemptResult>` |
-| `resetFailedAttempts(key)` | Reset failed attempt counter | `Promise<void>` |
+#### rateLimitByEmail
 
-### OTP Utilities (from shared)
+Checks rate limit by email address.
 
-| Function | Description | Returns |
-|----------|-------------|---------|
-| `generateOTP(length)` | Generate random numeric OTP | `string` |
-| `getOTPExpiry(minutes)` | Get expiry date for OTP | `Date` |
-| `isOTPExpired(expiresAt)` | Check if OTP has expired | `boolean` |
+```ts
+import { rateLimitByEmail } from "@/lib/server/auth";
 
-### Cookie Utilities (from shared)
+const result = await rateLimitByEmail("user@example.com", 3, "15 m");
+```
 
-| Function | Description | Returns |
-|----------|-------------|---------|
-| `setSessionTokenCookie(token, expiresAt, name)` | Set session cookie | `Promise<void>` |
-| `getSessionTokenCookie(name)` | Get session cookie value | `Promise<string \| undefined>` |
-| `deleteSessionTokenCookie()` | Delete session cookie | `Promise<void>` |
+**Parameters:**
 
-### Validation Utilities (from shared)
+| Name | Type | Description |
+|------|------|-------------|
+| `email` | `string` | Email address |
+| `requests` | `number` | Max requests |
+| `window` | `string` | Time window (e.g., `"15 m"`) |
 
-| Function | Description | Returns |
-|----------|-------------|---------|
-| `validateEmail(email)` | Validate email format | `boolean` |
-| `normalizeEmail(email)` | Normalize email to lowercase | `string` |
-| `extractClientIP(request)` | Extract client IP from request | `string` |
+**Returns:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `success` | `boolean` | Whether request is allowed |
+| `limit` | `number` | Max requests |
+| `remaining` | `number` | Requests remaining |
+| `reset` | `number` | Reset timestamp |
+
+---
+
+#### rateLimitByIP
+
+Checks rate limit by IP address.
+
+```ts
+import { rateLimitByIP } from "@/lib/server/auth";
+
+const result = await rateLimitByIP("192.168.1.1", 20, "15 m");
+```
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `ip` | `string` | IP address |
+| `requests` | `number` | Max requests |
+| `window` | `string` | Time window |
+
+---
+
+#### trackFailedAttempt
+
+Tracks failed verification attempts for lockout.
+
+```ts
+import { trackFailedAttempt } from "@/lib/server/auth";
+
+const result = await trackFailedAttempt("verify-otp:user@example.com", 10, 3600);
+```
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `key` | `string` | Unique identifier |
+| `maxAttempts` | `number` | Max attempts before lockout |
+| `windowSeconds` | `number` | Window in seconds |
+
+**Returns:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `locked` | `boolean` | Whether account is locked |
+| `remaining` | `number` | Attempts remaining |
+
+---
+
+#### resetFailedAttempts
+
+Resets failed attempt counter.
+
+```ts
+import { resetFailedAttempts } from "@/lib/server/auth";
+
+await resetFailedAttempts("verify-otp:user@example.com");
+```
+
+---
 
 ### Types
 
-```typescript
+```ts
 interface User {
   id: string;
   email: string;
@@ -541,59 +672,35 @@ interface VerificationCode {
   expiresAt: Date;
   createdAt: Date;
 }
-```
 
----
+interface SendOTPRequest {
+  email: string;
+}
 
-## Troubleshooting
+interface SendOTPResponse {
+  success: boolean;
+  message: string;
+  error?: string;
+}
 
-### Using the Diagnostics Panel
+interface VerifyOTPRequest {
+  email: string;
+  code: string;
+}
 
-For easy troubleshooting during development, add the diagnostics panel to any page:
-
-```tsx
-import { AuthDiagnosticsPanel } from "@/components/diagnostics-panel";
-import { checkAuthHealth } from "@/app/actions/diagnostics";
-
-export default function DevPage() {
-  return <AuthDiagnosticsPanel checkAuthHealth={checkAuthHealth} />;
+interface VerifyOTPResponse {
+  success: boolean;
+  message: string;
+  error?: string;
 }
 ```
 
-The panel checks:
-- Database connectivity
-- Redis configuration
-- Email service setup
-- OAuth credentials
-- Session cookies
+### Constants
 
-Each check provides helpful hints for fixing issues.
-
-### Common Issues
-
-**OTP emails not sending in production:**
-- Verify `RESEND_API_KEY` is set correctly
-- Check `AUTH_EMAIL_FROM` matches your verified Resend domain
-- Check Resend dashboard for error logs
-
-**Rate limiting not working:**
-- Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
-- In development, in-memory fallback is used automatically
-
-**Google OAuth redirect error:**
-- Ensure `GOOGLE_REDIRECT_URI` matches callback URL in Google Console
-- Check redirect URI is added to authorized URIs in Google Console
-- Verify `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are correct
-
-**Session not persisting:**
-- Check cookies are enabled in browser
-- Verify `secure` cookie flag matches environment (disabled in dev)
-- Ensure database connection is working
-
-**TypeScript errors:**
-- Run `npx prisma generate` to generate Prisma types
-- Restart TypeScript server in your IDE
-
-**Build errors:**
-- Ensure all dependencies are installed
-- Check for import path errors (`@/lib/auth-otp-prisma` vs `@/lib/auth-otp-shared`)
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `OTP_LENGTH` | `6` | Default OTP length |
+| `OTP_EXPIRY_MINUTES` | `3` | Default OTP expiry |
+| `SESSION_EXPIRY_DAYS` | `30` | Session duration |
+| `SESSION_RENEWAL_THRESHOLD_DAYS` | `15` | Renew session if less than this |
+| `SESSION_COOKIE_NAME` | `"session"` | Default cookie name |
