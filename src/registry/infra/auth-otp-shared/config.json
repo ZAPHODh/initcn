@@ -1,5 +1,5 @@
 {
-  "name": "auth-otp-shared",
+  "name": "otp-shared",
   "type": "registry:lib",
   "title": "Auth OTP (Shared)",
   "description": "Database-agnostic shared code for OTP authentication",

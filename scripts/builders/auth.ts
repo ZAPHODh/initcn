@@ -11,7 +11,8 @@ export class AuthBuilder implements InfraBuilder {
 		return (
 			registryName.startsWith("auth-") ||
 			registryName === "auth" ||
-			registryName === "otp"
+			registryName === "otp" ||
+			registryName === "otp-shared"
 		);
 	}
 

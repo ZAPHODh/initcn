@@ -8,5 +8,5 @@
     "stripe"
   ],
   "devDependencies": ["prisma"],
-  "registryDependencies": ["payment-stripe-shared"]
+  "registryDependencies": ["subscription-shared"]
 }

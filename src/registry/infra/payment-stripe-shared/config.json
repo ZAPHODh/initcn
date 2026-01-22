@@ -1,5 +1,5 @@
 {
-  "name": "payment-stripe-shared",
+  "name": "subscription-shared",
   "type": "registry:lib",
   "title": "Payment Stripe (Shared)",
   "description": "Database-agnostic shared code for Stripe subscription management",

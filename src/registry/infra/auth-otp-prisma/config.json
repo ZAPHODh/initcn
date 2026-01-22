@@ -12,5 +12,5 @@
     "zod"
   ],
   "devDependencies": ["prisma"],
-  "registryDependencies": ["auth-otp-shared"]
+  "registryDependencies": ["otp-shared"]
 }
