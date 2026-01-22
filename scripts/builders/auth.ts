@@ -22,6 +22,11 @@ export class AuthBuilder implements InfraBuilder {
 	): string {
 		const relativePath = relative(sourceDir, filePath);
 
+		// .env.example.* files go to project root (keep the full name)
+		if (relativePath.startsWith(".env.example.")) {
+			return relativePath;
+		}
+
 		// API routes go to app/api/
 		if (relativePath.startsWith("api/")) {
 			return `app/${relativePath}`;

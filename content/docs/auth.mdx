@@ -92,7 +92,13 @@ npx prisma db push
 
 ### Configure environment variables
 
-Create `.env.local`:
+An `.env.example.otp` file was installed with the registry. Copy it to `.env.local`:
+
+```bash
+cat .env.example.otp >> .env.local
+```
+
+Or create `.env.local` manually:
 
 ```bash
 # Database

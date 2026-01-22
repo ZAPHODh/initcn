@@ -14,7 +14,7 @@ import { siteConfig } from "../src/config/site.js";
 import {
 	ROOT_DIR,
 	INFRA_DIR,
-	getAllTsFiles,
+	getAllRegistryFiles,
 	getFileType,
 	toRegistryUrl,
 	writeRegistryItem,
@@ -63,8 +63,8 @@ function generateRegistry(
 	// Get the appropriate builder for this registry
 	const builder = getBuilder(config.name);
 
-	// Get all TypeScript files in the directory
-	const allFiles = getAllTsFiles(sourceDir);
+	// Get all registry files in the directory
+	const allFiles = getAllRegistryFiles(sourceDir);
 
 	const registryFiles: RegistryFile[] = allFiles.map((filePath) => ({
 		path: relative(ROOT_DIR, filePath),

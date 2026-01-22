@@ -45,10 +45,11 @@ export interface RegistryItem {
 }
 
 /**
- * Recursively finds all TypeScript files in a directory
- * Excludes index.ts and config.json files
+ * Recursively finds all registry files in a directory
+ * Includes TypeScript files and .env.example.* files
+ * Excludes index.ts, config.json, and schema files
  */
-export function getAllTsFiles(dir: string): string[] {
+export function getAllRegistryFiles(dir: string): string[] {
 	const files: string[] = [];
 
 	function walk(currentDir: string) {
@@ -62,8 +63,17 @@ export function getAllTsFiles(dir: string): string[] {
 				walk(fullPath);
 			} else if (stat.isFile()) {
 				const ext = extname(item);
-				// Exclude index.ts and config.json files
-				if ((ext === ".ts" || ext === ".tsx") && item !== "index.ts") {
+
+				// Include .env.example.* files
+				if (item.startsWith(".env.example.")) {
+					files.push(fullPath);
+				}
+				// Include TypeScript files (excluding index.ts and schemas)
+				else if (
+					(ext === ".ts" || ext === ".tsx") &&
+					item !== "index.ts" &&
+					!item.includes("schema")
+				) {
 					files.push(fullPath);
 				}
 			}

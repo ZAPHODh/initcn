@@ -85,7 +85,13 @@ npx prisma migrate dev --name add_stripe_subscription
 
 ### Configure environment variables
 
-Add these to your `.env.local`:
+An `.env.example.subscription` file was installed with the registry. Append it to your `.env.local`:
+
+```bash
+cat .env.example.subscription >> .env.local
+```
+
+Or add these manually to your `.env.local`:
 
 ```bash
 # Stripe API Keys
