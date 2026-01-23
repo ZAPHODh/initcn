@@ -70,7 +70,12 @@ export class AuthBuilder implements InfraBuilder {
 			return `lib/server/auth/${pathWithoutServerPrefix}`;
 		}
 
-		// Everything else (db, mail, rate-limit, types, schemas, index.ts, etc.)
+		// db.ts and mail.ts go to lib/server/ (shared across features)
+		if (relativePath === "db.ts" || relativePath === "mail.ts") {
+			return `lib/server/${relativePath}`;
+		}
+
+		// Everything else (rate-limit, types, schemas, index.ts, etc.)
 		// goes to lib/server/auth/
 		return `lib/server/auth/${relativePath}`;
 	}

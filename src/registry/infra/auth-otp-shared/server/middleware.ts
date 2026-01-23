@@ -2,7 +2,7 @@ import { createMiddleware } from "next-safe-action";
 import { getCurrentSession } from "./session";
 
 export const authMiddleware = createMiddleware().define(
-  async ({ next }: any) => {
+  async ({ next }) => {
     const { session, user } = await getCurrentSession();
 
     if (!session || !user) {
