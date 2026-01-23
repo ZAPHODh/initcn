@@ -85,19 +85,19 @@ export default function HomePage() {
             </h1>
           </AnimatedFadeUp>
 
-          <AnimatedFadeUp>
+          {/*<AnimatedFadeUp>
             <p className="mx-auto max-w-2xl text-lg text-fd-muted-foreground sm:text-xl">
               Stop copying auth boilerplate from tutorial to tutorial.
               Install production-ready authentication configs in seconds.
             </p>
-          </AnimatedFadeUp>
+          </AnimatedFadeUp>*/}
 
           <AnimatedFadeUp className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/docs"
+              href="https://github.com/ZAPHODh/initcn"
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-fd-primary px-6 py-3 text-sm font-medium text-fd-primary-foreground hover:bg-fd-primary/90 transition-colors"
             >
-              Browse Configs
+             View on GitHub
               <ArrowRight className="size-4" />
             </Link>
             <Link
@@ -107,12 +107,13 @@ export default function HomePage() {
               View Documentation
             </Link>
           </AnimatedFadeUp>
+          <AnimatedSection className="mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
+            <AnimatedStats stats={stats} />
+          </AnimatedSection>
         </AnimatedHero>
       </section>
 
-      <AnimatedSection className="mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
-        <AnimatedStats stats={stats} />
-      </AnimatedSection>
+     
 
       <AnimatedSectionScale className="mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
         <div className="mx-auto max-w-3xl text-center space-y-4 mb-16">
