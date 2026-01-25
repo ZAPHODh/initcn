@@ -1,5 +1,6 @@
 import type { BaseLayoutProps } from "@/components/layout/shared";
 import { Logo } from "@/components/logo";
+import { ConfigModal } from "@/components/config-builder";
 
 export function baseOptions(): BaseLayoutProps {
   return {
@@ -7,5 +8,11 @@ export function baseOptions(): BaseLayoutProps {
       title: <Logo size={24} />,
     },
     githubUrl: "https://github.com/ZAPHODh/initcn",
+    links: [
+      {
+        type: "custom",
+        children: <ConfigModal />,
+      },
+    ],
   };
 }
