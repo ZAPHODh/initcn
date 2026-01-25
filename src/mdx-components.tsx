@@ -5,6 +5,12 @@ import { Card, Cards } from "fumadocs-ui/components/card";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import type { MDXComponents } from "mdx/types";
 import { ComponentPreview } from "@/components/docs/component-preview";
+import {
+  ConfigModal,
+  InstallCommand,
+  FeatureInstallCommands,
+  CurrentOrmBadge,
+} from "@/components/config-builder";
 
 export function getMDXComponents(components?: MDXComponents): MDXComponents {
   return {
@@ -17,6 +23,10 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     ComponentPreview,
     Card,
     Cards,
+    ConfigModal,
+    InstallCommand,
+    FeatureInstallCommands,
+    CurrentOrmBadge,
     ...components,
   };
 }

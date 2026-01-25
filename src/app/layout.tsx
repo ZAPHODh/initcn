@@ -1,4 +1,5 @@
 import { RootProvider } from "fumadocs-ui/provider/next";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./global.css";
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
@@ -88,7 +89,9 @@ export default function Layout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={geist.className} suppressHydrationWarning>
       <body className="flex flex-col min-h-screen">
-        <RootProvider>{children}</RootProvider>
+        <NuqsAdapter>
+          <RootProvider>{children}</RootProvider>
+        </NuqsAdapter>
         <Analytics />
       </body>
     </html>

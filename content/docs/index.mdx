@@ -6,7 +6,8 @@ description: Set up and start using initcn infrastructure configurations in your
 Welcome to initcn! This guide will help you set up and start using our infrastructure configurations in your project.
 
 ## Quick Start
-first of all, make sure are u setup [shadcn](https://ui.shadcn.com) in your projects, then add the initcn registry to your `components.json`:
+
+First, make sure you have [shadcn](https://ui.shadcn.com) set up in your project, then add the initcn registry to your `components.json`:
 
 ```json
 {
@@ -15,35 +16,34 @@ first of all, make sure are u setup [shadcn](https://ui.shadcn.com) in your proj
   }
 }
 ```
-You can start adding infrastructure configurations right away!
 
-<Tabs items={["pnpm", "npm", "yarn", "bun"]}>
-  <Tab value="pnpm">
-  ```bash
-  pnpm dlx shadcn@latest add @initcn/otp
-  ```
-  </Tab>
+## Configure Your Project
 
-  <Tab value="npm">
-  ```bash
-  npx shadcn@latest add @initcn/otp
-  ```
-  </Tab>
+Choose your database/ORM preference to get personalized installation commands:
 
-  <Tab value="yarn">
-  ```bash
-  yarn dlx shadcn@latest add @initcn/otp
-  ```
-  </Tab>
+<ConfigModal />
 
-  <Tab value="bun">
-  ```bash
-  bunx shadcn@latest add @initcn/otp
-  ```
-  </Tab>
-</Tabs>
+<CurrentOrmBadge />
 
+## Install Features
 
+### Authentication
+
+OTP + OAuth authentication with email verification, rate limiting, and session management.
+
+<InstallCommand feature="auth" />
+
+### Payments
+
+Stripe subscription management with webhooks, checkout sessions, and customer portal.
+
+<InstallCommand feature="payments" />
+
+### Internationalization
+
+Type-safe i18n with next-international for server and client components.
+
+<InstallCommand feature="i18n" />
 
 ## Initialize MCP (optional)
 
