@@ -1,0 +1,18 @@
+{
+  "name": "subscription-nextjs-drizzle",
+  "type": "registry:lib",
+  "title": "Payment Stripe (Next.js + Drizzle)",
+  "description": "Stripe subscription management with Next.js and Drizzle ORM",
+  "capabilities": {
+    "orm": ["drizzle"],
+    "framework": ["nextjs"]
+  },
+  "dependencies": [
+    "@neondatabase/serverless",
+    "@paralleldrive/cuid2",
+    "drizzle-orm",
+    "stripe"
+  ],
+  "devDependencies": ["drizzle-kit"],
+  "registryDependencies": ["subscription-nextjs-shared"]
+}

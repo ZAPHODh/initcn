@@ -8,7 +8,7 @@ export interface ProjectConfig {
 
 export const ORM_OPTIONS = [
 	{ value: "prisma" as const, label: "Prisma", available: true, description: undefined },
-	{ value: "drizzle" as const, label: "Drizzle", available: false, description: undefined },
+	{ value: "drizzle" as const, label: "Drizzle", available: true, description: undefined },
 	{ value: "typeorm" as const, label: "TypeORM", available: false, description: undefined },
 ];
 
@@ -42,7 +42,7 @@ export const VARIANTS = {
 				astro: null,
 			},
 			drizzle: {
-				nextjs: null,
+				nextjs: "otp-nextjs-drizzle",
 				vite: null,
 				remix: null,
 				astro: null,
@@ -64,7 +64,7 @@ export const VARIANTS = {
 				astro: null,
 			},
 			drizzle: {
-				nextjs: null,
+				nextjs: "subscription-nextjs-drizzle",
 				vite: null,
 				remix: null,
 				astro: null,

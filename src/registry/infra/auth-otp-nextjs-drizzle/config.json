@@ -1,0 +1,28 @@
+{
+  "name": "otp-nextjs-drizzle",
+  "type": "registry:lib",
+  "title": "Auth OTP (Next.js + Drizzle)",
+  "description": "OTP authentication with Next.js and Drizzle ORM",
+  "capabilities": {
+    "orm": ["drizzle"],
+    "framework": ["nextjs"]
+  },
+  "dependencies": [
+    "@neondatabase/serverless",
+    "@oslojs/crypto",
+    "@oslojs/encoding",
+    "@paralleldrive/cuid2",
+    "@react-email/components",
+    "@tanstack/react-form",
+    "@upstash/ratelimit",
+    "@upstash/redis",
+    "arctic",
+    "drizzle-orm",
+    "next-safe-action",
+    "resend",
+    "sonner",
+    "zod"
+  ],
+  "devDependencies": ["drizzle-kit"],
+  "registryDependencies": ["input-otp", "dialog"]
+}

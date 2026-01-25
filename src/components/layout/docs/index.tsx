@@ -41,6 +41,7 @@ import {
   SidebarViewport,
 } from "./sidebar";
 import { SidebarExternalLinks } from "./sidebar-external-links";
+import { ConfigToggle } from "@/components/config-builder";
 
 export interface DocsLayoutProps extends BaseLayoutProps {
   tree: PageTree.Root;
@@ -298,6 +299,7 @@ export function DocsLayout({
                     (searchToggle.components?.sm ?? (
                       <SearchToggle className="p-2" hideIfDisabled />
                     ))}
+                  <ConfigToggle className="p-2" />
                   {sidebarEnabled && (
                     <SidebarTrigger
                       className={cn(
