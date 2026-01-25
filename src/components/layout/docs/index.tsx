@@ -170,10 +170,13 @@ export function DocsLayout({
                 </SidebarCollapseTrigger>
               )}
             </div>
-            {searchToggle.enabled !== false &&
-              (searchToggle.components?.lg ?? (
-                <LargeSearchToggle hideIfDisabled />
-              ))}
+            <div className="flex gap-2">
+              {searchToggle.enabled !== false &&
+                (searchToggle.components?.lg ?? (
+                  <LargeSearchToggle hideIfDisabled />
+                ))}
+              <ConfigToggle />
+            </div>
             {tabs.length > 0 && tabMode === "auto" && (
               <SidebarTabsDropdown options={tabs} />
             )}
