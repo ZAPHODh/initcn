@@ -8,7 +8,7 @@ import type { ConfigJson } from "./shared.js";
 
 export class I18nBuilder extends BaseInfraBuilder {
 	canHandle(registryName: string, _config?: ConfigJson): boolean {
-		return registryName.startsWith("i18n-") || registryName === "i18n";
+		return registryName.startsWith("i18n");
 	}
 
 	getFeatureName(): string {

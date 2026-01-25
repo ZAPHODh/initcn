@@ -1,0 +1,16 @@
+{
+  "name": "subscription-nextjs-prisma",
+  "type": "registry:lib",
+  "title": "Payment Stripe (Next.js + Prisma)",
+  "description": "Stripe subscription management with Next.js and Prisma ORM",
+  "capabilities": {
+    "orm": ["prisma"],
+    "framework": ["nextjs"]
+  },
+  "dependencies": [
+    "@prisma/client",
+    "stripe"
+  ],
+  "devDependencies": ["prisma"],
+  "registryDependencies": ["subscription-nextjs-shared"]
+}

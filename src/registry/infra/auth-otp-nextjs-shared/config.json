@@ -1,8 +1,12 @@
 {
-  "name": "otp-shared",
+  "name": "otp-nextjs-shared",
   "type": "registry:lib",
-  "title": "Auth OTP (Shared)",
-  "description": "Database-agnostic shared code for OTP authentication",
+  "title": "Auth OTP Next.js (Shared)",
+  "description": "Shared Next.js code for OTP authentication",
+  "capabilities": {
+    "orm": ["*"],
+    "framework": ["nextjs"]
+  },
   "dependencies": [
     "@react-email/components",
     "@oslojs/crypto",

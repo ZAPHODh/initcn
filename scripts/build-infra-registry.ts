@@ -8,12 +8,13 @@
  * Uses auto-discovered builders to determine correct target paths for each infrastructure type.
  */
 
-import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
+import { readdirSync, readFileSync, statSync, existsSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { siteConfig } from "../src/config/site.js";
 import {
 	ROOT_DIR,
 	INFRA_DIR,
+	OUTPUT_DIR,
 	getAllRegistryFiles,
 	getFileType,
 	toRegistryUrl,
@@ -186,6 +187,34 @@ async function main() {
 	}
 
 	console.log(`\n✨ Done! Generated ${infraDirs.length} infrastructure items.`);
+
+	// Create backward compatibility aliases
+	const ALIASES = {
+		otp: "otp-nextjs-prisma",
+		"otp-shared": "otp-nextjs-shared",
+		subscription: "subscription-nextjs-prisma",
+		"subscription-shared": "subscription-nextjs-shared",
+		i18n: "i18n-nextjs",
+	};
+
+	console.log("\n📦 Creating backward compatibility aliases...");
+
+	for (const [alias, target] of Object.entries(ALIASES)) {
+		const targetPath = join(OUTPUT_DIR, `${target}.json`);
+		const aliasPath = join(OUTPUT_DIR, `${alias}.json`);
+
+		if (existsSync(targetPath)) {
+			const content = readFileSync(targetPath, "utf-8");
+			const json = JSON.parse(content);
+
+			// Keep old name in alias
+			json.name = alias;
+			json._aliasOf = target; // Metadata for debugging
+
+			writeFileSync(aliasPath, JSON.stringify(json, null, 2));
+			console.log(`  ✓ Created alias ${alias}.json → ${target}.json`);
+		}
+	}
 }
 
 main();

@@ -1,0 +1,16 @@
+{
+  "name": "subscription-nextjs-shared",
+  "type": "registry:lib",
+  "title": "Payment Stripe Next.js (Shared)",
+  "description": "Shared Next.js code for Stripe subscription management",
+  "capabilities": {
+    "orm": ["*"],
+    "framework": ["nextjs"]
+  },
+  "dependencies": [
+    "stripe",
+    "zod",
+    "next-safe-action"
+  ],
+  "registryDependencies": []
+}

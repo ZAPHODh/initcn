@@ -27,7 +27,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
 
 	const [orm, setOrmState] = useQueryState(
 		"orm",
-		parseAsStringLiteral(["prisma", "none", "drizzle", "typeorm"] as const).withDefault(
+		parseAsStringLiteral(["prisma", "drizzle", "typeorm"] as const).withDefault(
 			"prisma",
 		),
 	);
@@ -49,7 +49,12 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
 					window.location.search.includes("orm=") ||
 					window.location.search.includes("framework=");
 				if (!hasUrlParams) {
-					if (parsed.orm) setOrmState(parsed.orm);
+					// Migrate old "none" ORM to "prisma"
+					const validOrm =
+						parsed.orm && parsed.orm !== ("none" as any)
+							? parsed.orm
+							: "prisma";
+					setOrmState(validOrm);
 					if (parsed.framework) setFrameworkState(parsed.framework);
 				}
 			} catch {
@@ -92,10 +97,18 @@ export function useConfig() {
  */
 export function useVariant(feature: keyof typeof VARIANTS): string[] | null {
 	const { config } = useConfig();
-	const strategy = DEFAULT_STRATEGY[feature] || "monolithic";
 	const variants = VARIANTS[feature];
 
-	// Monolithic strategy: single registry item
+	// i18n and other framework-only features (no ORM dimension)
+	if (!("monolithic" in variants)) {
+		// Framework-only feature
+		const variant = variants[config.framework];
+		return variant ? [variant] : null;
+	}
+
+	// Regular features with ORM × Framework
+	const strategy = DEFAULT_STRATEGY[feature] || "monolithic";
+
 	if (strategy === "monolithic" && "monolithic" in variants) {
 		const ormVariants = variants.monolithic[config.orm];
 		if (ormVariants && typeof ormVariants === "object") {

@@ -24,8 +24,11 @@ export function ConfiguredCommand({ feature, pm }: ConfiguredCommandProps) {
 
 	if (!isLoaded) {
 		// Show loading state with default variant (Next.js + Prisma)
+		const featureVariants = VARIANTS[feature];
 		const defaultVariant =
-			VARIANTS[feature].monolithic.prisma.nextjs;
+			"monolithic" in featureVariants
+				? featureVariants.monolithic.prisma.nextjs
+				: featureVariants.nextjs;
 		return (
 			<span>{`${PM_COMMANDS[pm]} shadcn@latest add @initcn/${defaultVariant}`}</span>
 		);

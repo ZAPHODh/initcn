@@ -11,8 +11,7 @@ export class PaymentBuilder extends BaseInfraBuilder {
 		return (
 			registryName.startsWith("payment-") ||
 			registryName === "payment" ||
-			registryName === "subscription" ||
-			registryName === "subscription-shared"
+			registryName.startsWith("subscription")
 		);
 	}
 

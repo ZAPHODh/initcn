@@ -8,7 +8,6 @@ export default {
   },
   componentsDirs: [
     { name: "lib", type: "lib" },
-    { name: "ui", type: "ui" },
     // infra/ handled by custom build script (build-infra-registry.ts)
   ],
   docsDirs: ["content/docs"],

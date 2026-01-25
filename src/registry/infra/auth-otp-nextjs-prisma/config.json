@@ -1,0 +1,20 @@
+{
+  "name": "otp-nextjs-prisma",
+  "type": "registry:lib",
+  "title": "Auth OTP (Next.js + Prisma)",
+  "description": "OTP authentication with Next.js and Prisma ORM",
+  "capabilities": {
+    "orm": ["prisma"],
+    "framework": ["nextjs"]
+  },
+  "dependencies": [
+    "@prisma/client",
+    "resend",
+    "@upstash/ratelimit",
+    "@upstash/redis",
+    "arctic",
+    "zod"
+  ],
+  "devDependencies": ["prisma"],
+  "registryDependencies": ["otp-nextjs-shared"]
+}

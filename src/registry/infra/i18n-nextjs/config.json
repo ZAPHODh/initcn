@@ -1,8 +1,11 @@
 {
-  "name": "i18n",
+  "name": "i18n-nextjs",
   "type": "registry:lib",
-  "title": "Internationalization",
+  "title": "Internationalization (Next.js)",
   "description": "Type-safe internationalization with next-international for Next.js App Router. Supports server and client components with namespace-based organization.",
+  "capabilities": {
+    "framework": ["nextjs"]
+  },
   "dependencies": ["next-international"],
   "registryDependencies": []
 }

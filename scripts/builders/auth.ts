@@ -11,8 +11,7 @@ export class AuthBuilder extends BaseInfraBuilder {
 		return (
 			registryName.startsWith("auth-") ||
 			registryName === "auth" ||
-			registryName === "otp" ||
-			registryName === "otp-shared"
+			registryName.startsWith("otp")
 		);
 	}
 

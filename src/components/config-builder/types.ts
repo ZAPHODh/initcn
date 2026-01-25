@@ -1,4 +1,4 @@
-export type ORM = "prisma" | "none" | "drizzle" | "typeorm";
+export type ORM = "prisma" | "drizzle" | "typeorm";
 export type Framework = "nextjs" | "vite" | "remix" | "astro";
 
 export interface ProjectConfig {
@@ -7,15 +7,9 @@ export interface ProjectConfig {
 }
 
 export const ORM_OPTIONS = [
-	{ value: "prisma" as const, label: "Prisma", available: true },
-	{
-		value: "none" as const,
-		label: "No database",
-		description: "Shared utilities only",
-		available: true,
-	},
-	{ value: "drizzle" as const, label: "Drizzle", available: false },
-	{ value: "typeorm" as const, label: "TypeORM", available: false },
+	{ value: "prisma" as const, label: "Prisma", available: true, description: undefined },
+	{ value: "drizzle" as const, label: "Drizzle", available: false, description: undefined },
+	{ value: "typeorm" as const, label: "TypeORM", available: false, description: undefined },
 ];
 
 export const FRAMEWORK_OPTIONS = [
@@ -42,7 +36,7 @@ export const VARIANTS = {
 	auth: {
 		monolithic: {
 			prisma: {
-				nextjs: "otp", // Current backward-compatible name
+				nextjs: "otp-nextjs-prisma",
 				vite: null,
 				remix: null,
 				astro: null,
@@ -55,12 +49,6 @@ export const VARIANTS = {
 			},
 			typeorm: {
 				nextjs: null,
-				vite: null,
-				remix: null,
-				astro: null,
-			},
-			none: {
-				nextjs: "otp-shared", // Current backward-compatible name
 				vite: null,
 				remix: null,
 				astro: null,
@@ -70,7 +58,7 @@ export const VARIANTS = {
 	payments: {
 		monolithic: {
 			prisma: {
-				nextjs: "subscription", // Current backward-compatible name
+				nextjs: "subscription-nextjs-prisma",
 				vite: null,
 				remix: null,
 				astro: null,
@@ -83,12 +71,6 @@ export const VARIANTS = {
 			},
 			typeorm: {
 				nextjs: null,
-				vite: null,
-				remix: null,
-				astro: null,
-			},
-			none: {
-				nextjs: "subscription-shared", // Current backward-compatible name
 				vite: null,
 				remix: null,
 				astro: null,
@@ -96,44 +78,21 @@ export const VARIANTS = {
 		},
 	},
 	i18n: {
-		monolithic: {
-			prisma: {
-				nextjs: "i18n", // Works with all ORMs
-				vite: null,
-				remix: null,
-				astro: null,
-			},
-			drizzle: {
-				nextjs: "i18n",
-				vite: null,
-				remix: null,
-				astro: null,
-			},
-			typeorm: {
-				nextjs: "i18n",
-				vite: null,
-				remix: null,
-				astro: null,
-			},
-			none: {
-				nextjs: "i18n",
-				vite: null,
-				remix: null,
-				astro: null,
-			},
-		},
-	},
+		nextjs: "i18n-nextjs",
+		vite: null,
+		remix: null,
+		astro: null,
+	} as const,
 } as const;
 
 /**
  * Default strategy per feature
  * Start with monolithic, can migrate to layered later
+ * Note: i18n doesn't use a strategy since it's framework-only
  */
-export const DEFAULT_STRATEGY: Record<
-	keyof typeof VARIANTS,
-	VariantStrategy
+export const DEFAULT_STRATEGY: Partial<
+	Record<keyof typeof VARIANTS, VariantStrategy>
 > = {
 	auth: "monolithic",
 	payments: "monolithic",
-	i18n: "monolithic",
 };
