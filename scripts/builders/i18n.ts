@@ -3,54 +3,18 @@
  * Handles all i18n-* registry items (i18n, i18n-with-server-actions, etc.)
  */
 
-import { relative } from "node:path";
-import type { InfraBuilder } from "./shared.js";
+import { BaseInfraBuilder } from "./base-builder.js";
+import type { ConfigJson } from "./shared.js";
 
-export class I18nBuilder implements InfraBuilder {
-	canHandle(registryName: string): boolean {
+export class I18nBuilder extends BaseInfraBuilder {
+	canHandle(registryName: string, _config?: ConfigJson): boolean {
 		return registryName.startsWith("i18n-") || registryName === "i18n";
 	}
 
-	getTargetPath(
-		filePath: string,
-		sourceDir: string,
-		registryName: string,
-	): string {
-		const relativePath = relative(sourceDir, filePath);
-
-		// API routes go to app/api/
-		if (relativePath.startsWith("api/")) {
-			return `app/${relativePath}`;
-		}
-
-		// App pages go to app/
-		if (relativePath.startsWith("app/")) {
-			return relativePath;
-		}
-
-		// Components go to components/ (flattened)
-		if (relativePath.startsWith("components/")) {
-			const filename = relativePath.split("/").pop();
-			return `components/${filename}`;
-		}
-
-		// Emails go to emails/
-		if (relativePath.startsWith("emails/")) {
-			return relativePath;
-		}
-
-		// Middleware at root goes to root
-		if (relativePath === "middleware.ts") {
-			return "middleware.ts";
-		}
-
-		// Locales go to root /locales
-		if (relativePath.startsWith("locales/")) {
-			return relativePath;
-		}
-
-		// Everything else (server code, client code, types, etc.)
-		// goes to lib/server/i18n/
-		return `lib/server/i18n/${relativePath}`;
+	getFeatureName(): string {
+		return "i18n";
 	}
+
+	// I18n-specific overrides can be added here if needed
+	// The base class handles all the default mappings including locales/
 }

@@ -5,7 +5,7 @@
  * Auto-discovers any directory in src/registry/infra/ with a config.json file
  * and generates shadcn-compatible registry JSON files.
  *
- * Uses per-infra builders to determine correct target paths for each infrastructure type.
+ * Uses auto-discovered builders to determine correct target paths for each infrastructure type.
  */
 
 import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
@@ -22,31 +22,61 @@ import {
 	type RegistryFile,
 	type RegistryItem,
 	type InfraBuilder,
+	type OrmType,
+	type FrameworkType,
 } from "./builders/shared.js";
-import { AuthBuilder } from "./builders/auth.js";
-import { I18nBuilder } from "./builders/i18n.js";
-import { PaymentBuilder } from "./builders/payment.js";
-
-// Register all available builders
-const builders: InfraBuilder[] = [
-	new AuthBuilder(),
-	new I18nBuilder(),
-	new PaymentBuilder(),
-];
+import { discoverBuilders, getBuilder } from "./builders/registry.js";
 
 /**
- * Finds the appropriate builder for a given registry name
- * Falls back to the first builder (auth) if no match is found for backward compatibility
+ * Validates config.json schema
  */
-function getBuilder(registryName: string): InfraBuilder {
-	const builder = builders.find((b) => b.canHandle(registryName));
-	if (!builder) {
-		console.warn(
-			`⚠️  No builder found for registry "${registryName}", falling back to auth builder`,
+function validateConfig(config: ConfigJson, configPath: string): void {
+	const required = ["name", "type", "title", "description"];
+	const missing = required.filter(
+		(field) => !config[field as keyof ConfigJson],
+	);
+
+	if (missing.length > 0) {
+		throw new Error(
+			`Invalid config.json at ${configPath}: missing required fields: ${missing.join(", ")}`,
 		);
-		return builders[0]; // fallback to auth builder
 	}
-	return builder;
+
+	// Validate capabilities if present
+	if (config.capabilities) {
+		const validOrms: OrmType[] = ["prisma", "drizzle", "typeorm", "none", "*"];
+		const validFrameworks: FrameworkType[] = [
+			"nextjs",
+			"vite",
+			"remix",
+			"astro",
+			"*",
+		];
+
+		if (config.capabilities.orm) {
+			const invalid = config.capabilities.orm.filter(
+				(orm) => !validOrms.includes(orm),
+			);
+			if (invalid.length > 0) {
+				throw new Error(
+					`Invalid ORM types in ${configPath}: ${invalid.join(", ")}. ` +
+						`Valid: ${validOrms.join(", ")}`,
+				);
+			}
+		}
+
+		if (config.capabilities.framework) {
+			const invalid = config.capabilities.framework.filter(
+				(fw) => !validFrameworks.includes(fw),
+			);
+			if (invalid.length > 0) {
+				throw new Error(
+					`Invalid framework types in ${configPath}: ${invalid.join(", ")}. ` +
+						`Valid: ${validFrameworks.join(", ")}`,
+				);
+			}
+		}
+	}
 }
 
 /**
@@ -56,12 +86,16 @@ function generateRegistry(
 	configPath: string,
 	sourceDir: string,
 	ourRegistryNames: Set<string>,
+	builders: InfraBuilder[],
 ): RegistryItem {
 	// Read config.json
 	const config: ConfigJson = JSON.parse(readFileSync(configPath, "utf-8"));
 
+	// Validate config.json schema
+	validateConfig(config, configPath);
+
 	// Get the appropriate builder for this registry
-	const builder = getBuilder(config.name);
+	const builder = getBuilder(config.name, config, builders);
 
 	// Get all registry files in the directory
 	const allFiles = getAllRegistryFiles(sourceDir);
@@ -70,7 +104,7 @@ function generateRegistry(
 		path: relative(ROOT_DIR, filePath),
 		content: readFileSync(filePath, "utf-8"),
 		type: getFileType(filePath, sourceDir),
-		target: builder.getTargetPath(filePath, sourceDir, config.name),
+		target: builder.getTargetPath(filePath, sourceDir, config.name, config),
 	}));
 
 	const item: RegistryItem = {
@@ -89,7 +123,7 @@ function generateRegistry(
 		// Leave other component names as-is so shadcn fetches them from the default registry
 		item.registryDependencies = config.registryDependencies.map((dep) => {
 			// Check if this is a URL already
-			if (dep.startsWith('http://') || dep.startsWith('https://')) {
+			if (dep.startsWith("http://") || dep.startsWith("https://")) {
 				return dep;
 			}
 			// Check if this dependency is one of our registry items
@@ -104,13 +138,18 @@ function generateRegistry(
 	return item;
 }
 
-function main() {
+async function main() {
 	console.log("🔨 Building infrastructure registry items...\n");
 
 	if (!existsSync(INFRA_DIR)) {
 		console.log("⚠️  No infra directory found. Skipping infrastructure build.");
 		return;
 	}
+
+	// Auto-discover builders
+	console.log("📦 Discovering builders...");
+	const builders = await discoverBuilders();
+	console.log(`   Found ${builders.length} builders\n`);
 
 	// Auto-discover all directories with config.json
 	const infraDirs = readdirSync(INFRA_DIR).filter((name) => {
@@ -120,9 +159,7 @@ function main() {
 	});
 
 	if (infraDirs.length === 0) {
-		console.log(
-			"⚠️  No infrastructure configs found (no config.json files).",
-		);
+		console.log("⚠️  No infrastructure configs found (no config.json files).");
 		return;
 	}
 
@@ -139,8 +176,13 @@ function main() {
 		const sourceDir = join(INFRA_DIR, dirName);
 		const configPath = join(sourceDir, "config.json");
 
-		const item = generateRegistry(configPath, sourceDir, ourRegistryNames);
-		writeRegistryItem(item);
+		try {
+			const item = generateRegistry(configPath, sourceDir, ourRegistryNames, builders);
+			writeRegistryItem(item);
+		} catch (error) {
+			console.error(`❌ Failed to build ${dirName}:`, error);
+			throw error;
+		}
 	}
 
 	console.log(`\n✨ Done! Generated ${infraDirs.length} infrastructure items.`);

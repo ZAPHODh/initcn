@@ -15,6 +15,9 @@ export const ROOT_DIR = process.cwd();
 export const INFRA_DIR = join(ROOT_DIR, "src/registry/infra");
 export const OUTPUT_DIR = join(ROOT_DIR, "public/r");
 
+export type OrmType = "prisma" | "drizzle" | "typeorm" | "none" | "*";
+export type FrameworkType = "nextjs" | "vite" | "remix" | "astro" | "*";
+
 export interface ConfigJson {
 	name: string;
 	type: string;
@@ -23,6 +26,25 @@ export interface ConfigJson {
 	dependencies?: string[];
 	devDependencies?: string[];
 	registryDependencies?: string[];
+
+	// NEW: Stack capabilities
+	capabilities?: {
+		orm?: OrmType[];
+		framework?: FrameworkType[];
+	};
+
+	// NEW: Installation requirements
+	requires?: {
+		orm?: OrmType;
+		framework?: FrameworkType;
+	};
+
+	// NEW: File target overrides per framework
+	targetMappings?: {
+		[framework: string]: {
+			[sourcePattern: string]: string;
+		};
+	};
 }
 
 export interface RegistryFile {
@@ -134,10 +156,15 @@ export interface InfraBuilder {
 	/**
 	 * Checks if this builder can handle the given registry name
 	 */
-	canHandle(registryName: string): boolean;
+	canHandle(registryName: string, config?: ConfigJson): boolean;
 
 	/**
 	 * Determines the target path for a source file
 	 */
-	getTargetPath(filePath: string, sourceDir: string, registryName: string): string;
+	getTargetPath(
+		filePath: string,
+		sourceDir: string,
+		registryName: string,
+		config?: ConfigJson,
+	): string;
 }
