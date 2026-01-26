@@ -171,12 +171,10 @@ export function DocsLayout({
               )}
             </div>
             <div className="flex gap-2 items-center">
-              <div className="flex-1">
-                {searchToggle.enabled !== false &&
-                  (searchToggle.components?.lg ?? (
-                    <LargeSearchToggle hideIfDisabled />
-                  ))}
-              </div>
+              {searchToggle.enabled !== false &&
+                (searchToggle.components?.lg ?? (
+                  <LargeSearchToggle className="flex-1" hideIfDisabled />
+                ))}
               <ConfigToggle />
             </div>
             {tabs.length > 0 && tabMode === "auto" && (
