@@ -7,6 +7,7 @@ import type { MDXComponents } from "mdx/types";
 import { ComponentPreview } from "@/components/docs/component-preview";
 import {
   ConfigModal,
+  ConfigToggle,
   InstallCommand,
   FeatureInstallCommands,
   CurrentOrmBadge,
@@ -24,6 +25,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     Card,
     Cards,
     ConfigModal,
+    ConfigToggle,
     InstallCommand,
     FeatureInstallCommands,
     CurrentOrmBadge,
