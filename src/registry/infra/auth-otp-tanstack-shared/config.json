@@ -1,0 +1,21 @@
+{
+	"name": "otp-tanstack-shared",
+	"type": "registry:lib",
+	"title": "Auth OTP TanStack Start (Shared)",
+	"description": "Shared TanStack Start code for OTP authentication with JWT tokens",
+	"capabilities": {
+		"orm": ["*"],
+		"framework": ["tanstack-start"]
+	},
+	"dependencies": [
+		"@oslojs/crypto",
+		"@oslojs/encoding",
+		"sonner",
+		"jose",
+		"@tanstack/react-form",
+		"@tanstack/react-query",
+		"@tanstack/react-router",
+		"@tanstack/start"
+	],
+	"registryDependencies": ["input-otp", "dialog"]
+}

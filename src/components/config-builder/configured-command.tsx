@@ -19,7 +19,7 @@ const PM_COMMANDS: Record<PackageManager, string> = {
 };
 
 export function ConfiguredCommand({ feature, pm }: ConfiguredCommandProps) {
-	const { config, isLoaded } = useConfig();
+	const { isLoaded } = useConfig();
 	const variants = useVariant(feature);
 
 	if (!isLoaded) {
@@ -47,7 +47,6 @@ export function ConfiguredCommand({ feature, pm }: ConfiguredCommandProps) {
 	return <span>{command}</span>;
 }
 
-// Export a component that shows the current stack selection as badges
 export function CurrentStackBadge() {
 	const { config, isLoaded } = useConfig();
 
@@ -63,8 +62,8 @@ export function CurrentStackBadge() {
 	const frameworkLabels: Record<string, string> = {
 		nextjs: "Next.js",
 		vite: "Vite",
-		remix: "Remix",
 		astro: "Astro",
+		tanstackStart: "Tanstack Start",
 	};
 
 	return (
@@ -79,5 +78,4 @@ export function CurrentStackBadge() {
 	);
 }
 
-// Keep backward compatible export
 export const CurrentOrmBadge = CurrentStackBadge;

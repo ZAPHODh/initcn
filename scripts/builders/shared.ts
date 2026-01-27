@@ -16,7 +16,7 @@ export const INFRA_DIR = join(ROOT_DIR, "src/registry/infra");
 export const OUTPUT_DIR = join(ROOT_DIR, "public/r");
 
 export type OrmType = "prisma" | "drizzle" | "typeorm" | "none" | "*";
-export type FrameworkType = "nextjs" | "vite" | "remix" | "astro" | "*";
+export type FrameworkType = "nextjs" | "vite" | "tanstack-start" | "remix" | "astro" | "*";
 
 export interface ConfigJson {
 	name: string;

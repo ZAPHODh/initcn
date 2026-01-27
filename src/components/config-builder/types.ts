@@ -15,7 +15,7 @@ export const ORM_OPTIONS = [
 export const FRAMEWORK_OPTIONS = [
 	{ value: "nextjs" as const, label: "Next.js", available: true },
 	{ value: "vite" as const, label: "Vite + React", available: true },
-	{ value: "tanstack-start" as const, label: "TanStack Start", available: false },
+	{ value: "tanstack-start" as const, label: "TanStack Start", available: true },
 	{ value: "astro" as const, label: "Astro", available: false },
 ];
 
@@ -38,7 +38,7 @@ export const VARIANTS = {
 			prisma: {
 				nextjs: "otp-nextjs-prisma",
 				vite: "otp-vite-prisma",
-				"tanstack-start": null,
+				"tanstack-start": "otp-tanstack-prisma",
 				astro: null,
 			},
 			drizzle: {

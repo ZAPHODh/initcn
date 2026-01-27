@@ -34,12 +34,11 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
 
 	const [framework, setFrameworkState] = useQueryState(
 		"framework",
-		parseAsStringLiteral(["nextjs", "vite", "remix", "astro"] as const).withDefault(
+		parseAsStringLiteral(["nextjs", "vite", "tanstack-start", "astro"] as const).withDefault(
 			"nextjs",
 		),
 	);
 
-	// Load from localStorage on mount
 	useEffect(() => {
 		const stored = localStorage.getItem(STORAGE_KEY);
 		if (stored) {
@@ -49,7 +48,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
 					window.location.search.includes("orm=") ||
 					window.location.search.includes("framework=");
 				if (!hasUrlParams) {
-					// Migrate old "none" ORM to "prisma"
+
 					const validOrm =
 						parsed.orm && parsed.orm !== ("none" as any)
 							? parsed.orm
@@ -64,7 +63,6 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
 		setIsLoaded(true);
 	}, [setOrmState, setFrameworkState]);
 
-	// Persist to localStorage when config changes
 	useEffect(() => {
 		if (isLoaded) {
 			localStorage.setItem(STORAGE_KEY, JSON.stringify({ orm, framework }));
@@ -91,10 +89,7 @@ export function useConfig() {
 	return context;
 }
 
-/**
- * Hook to get variant name(s) for a feature based on current config
- * Returns array of registry items to install (for layered) or single item (for monolithic)
- */
+
 export function useVariant(feature: keyof typeof VARIANTS): string[] | null {
 	const { config } = useConfig();
 	const variants = VARIANTS[feature];
@@ -106,7 +101,7 @@ export function useVariant(feature: keyof typeof VARIANTS): string[] | null {
 		return variant ? [variant] : null;
 	}
 
-	// Regular features with ORM × Framework
+
 	const strategy = DEFAULT_STRATEGY[feature] || "monolithic";
 
 	if (strategy === "monolithic" && "monolithic" in variants) {

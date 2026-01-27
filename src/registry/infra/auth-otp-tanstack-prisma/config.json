@@ -1,0 +1,23 @@
+{
+	"name": "otp-tanstack-prisma",
+	"type": "registry:lib",
+	"title": "Auth OTP (TanStack Start + Prisma)",
+	"description": "OTP authentication with TanStack Start, JWT tokens, and Prisma ORM",
+	"capabilities": {
+		"orm": ["prisma"],
+		"framework": ["tanstack-start"]
+	},
+	"dependencies": [
+		"resend",
+		"@upstash/ratelimit",
+		"@upstash/redis",
+		"arctic",
+		"zod",
+		"jose",
+		"@oslojs/crypto",
+		"@oslojs/encoding",
+		"@prisma/client"
+	],
+	"devDependencies": ["prisma"],
+	"registryDependencies": ["otp-tanstack-shared"]
+}

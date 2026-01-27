@@ -49,6 +49,7 @@ function validateConfig(config: ConfigJson, configPath: string): void {
 		const validFrameworks: FrameworkType[] = [
 			"nextjs",
 			"vite",
+			"tanstack-start",
 			"remix",
 			"astro",
 			"*",
