@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type ComponentProps } from "react";
+import { useState, type ComponentProps } from "react";
 import {
 	Dialog,
 	DialogContent,
@@ -28,22 +28,13 @@ export function ConfigToggle({
 }: ComponentProps<"button">) {
 	const [open, setOpen] = useState(false);
 	const { config, setOrm, setFramework } = useConfig();
-	const [selectedOrm, setSelectedOrm] = useState<ORM>(config.orm);
-	const [selectedFramework, setSelectedFramework] = useState<Framework>(
-		config.framework,
-	);
 
-	useEffect(() => {
-		if (open) {
-			setSelectedOrm(config.orm);
-			setSelectedFramework(config.framework);
-		}
-	}, [open, config.orm, config.framework]);
+	const handleFrameworkChange = (framework: Framework) => {
+		setFramework(framework);
+	};
 
-	const handleSave = () => {
-		setOrm(selectedOrm);
-		setFramework(selectedFramework);
-		setOpen(false);
+	const handleOrmChange = (orm: ORM) => {
+		setOrm(orm);
 	};
 
 	return (
@@ -80,12 +71,12 @@ export function ConfigToggle({
 									type="button"
 									key={option.value}
 									onClick={() =>
-										option.available && setSelectedFramework(option.value)
+										option.available && handleFrameworkChange(option.value)
 									}
 									disabled={!option.available}
 									className={cn(
 										"flex items-center justify-between p-3 rounded-lg border text-left transition-colors",
-										selectedFramework === option.value && option.available
+										config.framework === option.value && option.available
 											? "border-fd-primary bg-fd-primary/5 ring-1 ring-fd-primary"
 											: "border-fd-border hover:border-fd-muted-foreground/50",
 										!option.available && "opacity-50 cursor-not-allowed",
@@ -95,12 +86,12 @@ export function ConfigToggle({
 										<div
 											className={cn(
 												"flex size-5 items-center justify-center rounded-full border-2",
-												selectedFramework === option.value && option.available
+												config.framework === option.value && option.available
 													? "border-fd-primary bg-fd-primary text-fd-primary-foreground"
 													: "border-fd-muted-foreground/30",
 											)}
 										>
-											{selectedFramework === option.value &&
+											{config.framework === option.value &&
 												option.available && <Check className="size-3" />}
 										</div>
 										<div className="font-medium">{option.label}</div>
@@ -122,11 +113,11 @@ export function ConfigToggle({
 								<button
 									type="button"
 									key={option.value}
-									onClick={() => option.available && setSelectedOrm(option.value)}
+									onClick={() => option.available && handleOrmChange(option.value)}
 									disabled={!option.available}
 									className={cn(
 										"flex items-center justify-between p-3 rounded-lg border text-left transition-colors",
-										selectedOrm === option.value && option.available
+										config.orm === option.value && option.available
 											? "border-fd-primary bg-fd-primary/5 ring-1 ring-fd-primary"
 											: "border-fd-border hover:border-fd-muted-foreground/50",
 										!option.available && "opacity-50 cursor-not-allowed",
@@ -136,12 +127,12 @@ export function ConfigToggle({
 										<div
 											className={cn(
 												"flex size-5 items-center justify-center rounded-full border-2",
-												selectedOrm === option.value && option.available
+												config.orm === option.value && option.available
 													? "border-fd-primary bg-fd-primary text-fd-primary-foreground"
 													: "border-fd-muted-foreground/30",
 											)}
 										>
-											{selectedOrm === option.value && option.available && (
+											{config.orm === option.value && option.available && (
 												<Check className="size-3" />
 											)}
 										</div>
@@ -163,10 +154,6 @@ export function ConfigToggle({
 							))}
 						</div>
 					</div>
-
-					<Button onClick={handleSave} className="w-full">
-						Save Configuration
-					</Button>
 				</div>
 			</DialogContent>
 		</Dialog>
@@ -176,23 +163,13 @@ export function ConfigToggle({
 export function ConfigModal() {
 	const [open, setOpen] = useState(false);
 	const { config, setOrm, setFramework } = useConfig();
-	const [selectedOrm, setSelectedOrm] = useState<ORM>(config.orm);
-	const [selectedFramework, setSelectedFramework] = useState<Framework>(
-		config.framework,
-	);
 
-	// Sync selected with config when modal opens
-	useEffect(() => {
-		if (open) {
-			setSelectedOrm(config.orm);
-			setSelectedFramework(config.framework);
-		}
-	}, [open, config.orm, config.framework]);
+	const handleFrameworkChange = (framework: Framework) => {
+		setFramework(framework);
+	};
 
-	const handleSave = () => {
-		setOrm(selectedOrm);
-		setFramework(selectedFramework);
-		setOpen(false);
+	const handleOrmChange = (orm: ORM) => {
+		setOrm(orm);
 	};
 
 	return (
@@ -220,12 +197,12 @@ export function ConfigModal() {
 									type="button"
 									key={option.value}
 									onClick={() =>
-										option.available && setSelectedFramework(option.value)
+										option.available && handleFrameworkChange(option.value)
 									}
 									disabled={!option.available}
 									className={cn(
 										"flex items-center justify-between p-3 rounded-lg border text-left transition-colors",
-										selectedFramework === option.value && option.available
+										config.framework === option.value && option.available
 											? "border-fd-primary bg-fd-primary/5 ring-1 ring-fd-primary"
 											: "border-fd-border hover:border-fd-muted-foreground/50",
 										!option.available && "opacity-50 cursor-not-allowed",
@@ -235,12 +212,12 @@ export function ConfigModal() {
 										<div
 											className={cn(
 												"flex size-5 items-center justify-center rounded-full border-2",
-												selectedFramework === option.value && option.available
+												config.framework === option.value && option.available
 													? "border-fd-primary bg-fd-primary text-fd-primary-foreground"
 													: "border-fd-muted-foreground/30",
 											)}
 										>
-											{selectedFramework === option.value &&
+											{config.framework === option.value &&
 												option.available && <Check className="size-3" />}
 										</div>
 										<div className="font-medium">{option.label}</div>
@@ -263,11 +240,11 @@ export function ConfigModal() {
 								<button
 									type="button"
 									key={option.value}
-									onClick={() => option.available && setSelectedOrm(option.value)}
+									onClick={() => option.available && handleOrmChange(option.value)}
 									disabled={!option.available}
 									className={cn(
 										"flex items-center justify-between p-3 rounded-lg border text-left transition-colors",
-										selectedOrm === option.value && option.available
+										config.orm === option.value && option.available
 											? "border-fd-primary bg-fd-primary/5 ring-1 ring-fd-primary"
 											: "border-fd-border hover:border-fd-muted-foreground/50",
 										!option.available && "opacity-50 cursor-not-allowed",
@@ -277,12 +254,12 @@ export function ConfigModal() {
 										<div
 											className={cn(
 												"flex size-5 items-center justify-center rounded-full border-2",
-												selectedOrm === option.value && option.available
+												config.orm === option.value && option.available
 													? "border-fd-primary bg-fd-primary text-fd-primary-foreground"
 													: "border-fd-muted-foreground/30",
 											)}
 										>
-											{selectedOrm === option.value && option.available && (
+											{config.orm === option.value && option.available && (
 												<Check className="size-3" />
 											)}
 										</div>
@@ -304,10 +281,6 @@ export function ConfigModal() {
 							))}
 						</div>
 					</div>
-
-					<Button onClick={handleSave} className="w-full">
-						Save Configuration
-					</Button>
 				</div>
 			</DialogContent>
 		</Dialog>
