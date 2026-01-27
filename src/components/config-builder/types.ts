@@ -1,5 +1,5 @@
 export type ORM = "prisma" | "drizzle" | "typeorm";
-export type Framework = "nextjs" | "vite" | "remix" | "astro";
+export type Framework = "nextjs" | "vite" | "tanstack-start" | "astro";
 
 export interface ProjectConfig {
 	orm: ORM;
@@ -14,8 +14,8 @@ export const ORM_OPTIONS = [
 
 export const FRAMEWORK_OPTIONS = [
 	{ value: "nextjs" as const, label: "Next.js", available: true },
-	{ value: "vite" as const, label: "Vite + React", available: false },
-	{ value: "remix" as const, label: "Remix", available: false },
+	{ value: "vite" as const, label: "Vite + React", available: true },
+	{ value: "tanstack-start" as const, label: "TanStack Start", available: false },
 	{ value: "astro" as const, label: "Astro", available: false },
 ];
 
@@ -37,20 +37,20 @@ export const VARIANTS = {
 		monolithic: {
 			prisma: {
 				nextjs: "otp-nextjs-prisma",
-				vite: null,
-				remix: null,
+				vite: "otp-vite-prisma",
+				"tanstack-start": null,
 				astro: null,
 			},
 			drizzle: {
 				nextjs: "otp-nextjs-drizzle",
 				vite: null,
-				remix: null,
+				"tanstack-start": null,
 				astro: null,
 			},
 			typeorm: {
 				nextjs: null,
 				vite: null,
-				remix: null,
+				"tanstack-start": null,
 				astro: null,
 			},
 		},
@@ -60,19 +60,19 @@ export const VARIANTS = {
 			prisma: {
 				nextjs: "subscription-nextjs-prisma",
 				vite: null,
-				remix: null,
+				"tanstack-start": null,
 				astro: null,
 			},
 			drizzle: {
 				nextjs: "subscription-nextjs-drizzle",
 				vite: null,
-				remix: null,
+				"tanstack-start": null,
 				astro: null,
 			},
 			typeorm: {
 				nextjs: null,
 				vite: null,
-				remix: null,
+				"tanstack-start": null,
 				astro: null,
 			},
 		},
@@ -80,7 +80,7 @@ export const VARIANTS = {
 	i18n: {
 		nextjs: "i18n-nextjs",
 		vite: null,
-		remix: null,
+		"tanstack-start": null,
 		astro: null,
 	} as const,
 } as const;

@@ -8,7 +8,6 @@
 		"framework": ["vite"]
 	},
 	"dependencies": [
-		"@prisma/client",
 		"resend",
 		"@upstash/ratelimit",
 		"@upstash/redis",
@@ -16,7 +15,8 @@
 		"zod",
 		"jose",
 		"@oslojs/crypto",
-		"@oslojs/encoding"
+		"@oslojs/encoding",
+		"@prisma/client"
 	],
 	"devDependencies": ["prisma"],
 	"registryDependencies": ["otp-vite-shared"]

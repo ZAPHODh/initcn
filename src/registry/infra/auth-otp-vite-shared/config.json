@@ -8,13 +8,13 @@
 		"framework": ["vite"]
 	},
 	"dependencies": [
-		"@tanstack/react-form",
-		"@tanstack/react-query",
-		"@tanstack/react-router",
 		"@oslojs/crypto",
 		"@oslojs/encoding",
 		"sonner",
-		"jose"
+		"jose",
+		"@tanstack/react-form",
+		"@tanstack/react-query",
+		"@tanstack/react-router"
 	],
 	"registryDependencies": ["input-otp", "dialog"]
 }
