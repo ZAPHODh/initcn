@@ -1,0 +1,49 @@
+// Prisma schema for auth-otp (Vite + JWT)
+//
+// Add these models to your existing schema.prisma file
+// Or create a new schema file if starting from scratch
+
+// User model
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  name          String?
+  picture       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  refreshTokens          RefreshToken[]
+  emailVerificationCodes EmailVerificationCode[]
+}
+
+// RefreshToken model (replaces Session for JWT-based auth)
+// Access tokens are validated locally (no DB hit)
+// Refresh tokens are stored in DB for revocation
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique // SHA256 hash of the refresh token
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+// Email verification code model (unchanged)
+model EmailVerificationCode {
+  id        String   @id @default(cuid())
+  userId    String
+  email     String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([email])
+}
