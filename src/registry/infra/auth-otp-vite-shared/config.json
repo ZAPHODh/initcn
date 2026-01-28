@@ -2,7 +2,7 @@
 	"name": "otp-vite-shared",
 	"type": "registry:lib",
 	"title": "Auth OTP Vite (Shared)",
-	"description": "Shared Vite code for OTP authentication with TanStack Router and JWT tokens",
+	"description": "Shared Vite code for OTP authentication with React Router and JWT tokens",
 	"capabilities": {
 		"orm": ["*"],
 		"framework": ["vite"]
@@ -14,7 +14,8 @@
 		"jose",
 		"@tanstack/react-form",
 		"@tanstack/react-query",
-		"@tanstack/react-router"
+		"react-router-dom"
 	],
+	"devDependencies": ["@types/node"],
 	"registryDependencies": ["input-otp", "dialog"]
 }

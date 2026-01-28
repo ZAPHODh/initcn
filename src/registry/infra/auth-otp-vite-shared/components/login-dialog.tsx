@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "react-router-dom";
 import {
 	Dialog,
 	DialogContent,
@@ -44,7 +44,7 @@ export function LoginDialog({
 	function handleOpenChange(open: boolean) {
 		if (!open) {
 			// Navigate back or to a default route
-			navigate({ to: "/" });
+			navigate("/");
 		}
 	}
 

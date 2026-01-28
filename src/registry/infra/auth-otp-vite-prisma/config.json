@@ -2,7 +2,7 @@
 	"name": "otp-vite-prisma",
 	"type": "registry:lib",
 	"title": "Auth OTP (Vite + Prisma)",
-	"description": "OTP authentication with Vite, TanStack Router, JWT tokens, and Prisma ORM",
+	"description": "OTP authentication with Vite, React Router, JWT tokens, and Prisma ORM",
 	"capabilities": {
 		"orm": ["prisma"],
 		"framework": ["vite"]
@@ -18,6 +18,6 @@
 		"@oslojs/encoding",
 		"@prisma/client"
 	],
-	"devDependencies": ["prisma"],
+	"devDependencies": ["prisma", "@types/node"],
 	"registryDependencies": ["otp-vite-shared"]
 }

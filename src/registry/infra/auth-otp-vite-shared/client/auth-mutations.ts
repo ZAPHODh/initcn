@@ -3,7 +3,7 @@ import {
 	useQueryClient,
 	type UseMutationOptions,
 } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { authKeys } from "./query-keys";
 import type {
@@ -146,7 +146,7 @@ export function useVerifyOTP(
 			const redirect = new URLSearchParams(window.location.search).get(
 				"redirect",
 			);
-			navigate({ to: redirect || "/dashboard" });
+			navigate(redirect || "/dashboard");
 		},
 		...options,
 	});
@@ -202,7 +202,7 @@ export function useLogout(
 			toast.success("Logged out successfully");
 
 			// Navigate to login page
-			navigate({ to: "/login" });
+			navigate("/login");
 		},
 		...options,
 	});
