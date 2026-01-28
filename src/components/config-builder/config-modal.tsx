@@ -27,7 +27,7 @@ export function ConfigToggle({
 	...props
 }: ComponentProps<"button">) {
 	const [open, setOpen] = useState(false);
-	const { config, setOrm, setFramework } = useConfig();
+	const { config, setOrm, setFramework, isPending } = useConfig();
 
 	const handleFrameworkChange = (framework: Framework) => {
 		setFramework(framework);
@@ -162,7 +162,7 @@ export function ConfigToggle({
 
 export function ConfigModal() {
 	const [open, setOpen] = useState(false);
-	const { config, setOrm, setFramework } = useConfig();
+	const { config, setOrm, setFramework, isPending } = useConfig();
 
 	const handleFrameworkChange = (framework: Framework) => {
 		setFramework(framework);

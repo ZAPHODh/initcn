@@ -1,12 +1,12 @@
 import { Suspense } from "react";
 import { RootProvider } from "fumadocs-ui/provider/next";
-import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./global.css";
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { siteConfig } from "@/config/site";
 import { ConfigProvider } from "@/components/config-builder";
+import { getConfigAction } from "@/actions/config";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -87,17 +87,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Layout({ children }: LayoutProps<"/">) {
+export default async function Layout({ children }: LayoutProps<"/">) {
+  const initialConfig = await getConfigAction();
+
   return (
     <html lang="en" className={geist.className} suppressHydrationWarning>
       <body className="flex flex-col min-h-screen">
-        <NuqsAdapter>
-          <Suspense fallback={null}>
-            <ConfigProvider>
-              <RootProvider>{children}</RootProvider>
-            </ConfigProvider>
-          </Suspense>
-        </NuqsAdapter>
+        <Suspense fallback={null}>
+          <ConfigProvider initialConfig={initialConfig}>
+            <RootProvider>{children}</RootProvider>
+          </ConfigProvider>
+        </Suspense>
         <Analytics />
       </body>
     </html>

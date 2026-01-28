@@ -3,78 +3,56 @@
 import {
 	createContext,
 	useContext,
-	useEffect,
-	useState,
+	useOptimistic,
+	useTransition,
 	type ReactNode,
 } from "react";
-import { useQueryState, parseAsStringLiteral } from "nuqs";
+import { setConfigAction } from "@/actions/config";
 import type { ORM, Framework, ProjectConfig } from "./types";
 import { VARIANTS, DEFAULT_STRATEGY } from "./types";
-
-const STORAGE_KEY = "initcn-config";
 
 interface ConfigContextValue {
 	config: ProjectConfig;
 	setOrm: (v: ORM) => void;
 	setFramework: (v: Framework) => void;
+	isPending: boolean;
 	isLoaded: boolean;
 }
 
 const ConfigContext = createContext<ConfigContextValue | null>(null);
 
-export function ConfigProvider({ children }: { children: ReactNode }) {
-	const [isLoaded, setIsLoaded] = useState(false);
+export function ConfigProvider({
+	children,
+	initialConfig,
+}: {
+	children: ReactNode;
+	initialConfig: ProjectConfig;
+}) {
+	const [isPending, startTransition] = useTransition();
+	const [optimisticConfig, setOptimisticConfig] =
+		useOptimistic(initialConfig);
 
-	const [orm, setOrmState] = useQueryState(
-		"orm",
-		parseAsStringLiteral(["prisma", "drizzle", "typeorm"] as const).withDefault(
-			"prisma",
-		),
-	);
+	const setOrm = (orm: ORM) => {
+		const newConfig = { ...optimisticConfig, orm };
 
-	const [framework, setFrameworkState] = useQueryState(
-		"framework",
-		parseAsStringLiteral(["nextjs", "vite", "tanstack-start", "astro"] as const).withDefault(
-			"nextjs",
-		),
-	);
+		startTransition(async () => {
+			setOptimisticConfig(newConfig);
+			await setConfigAction(newConfig);
+		});
+	};
 
-	useEffect(() => {
-		const stored = localStorage.getItem(STORAGE_KEY);
-		if (stored) {
-			try {
-				const parsed = JSON.parse(stored) as ProjectConfig;
-				const hasUrlParams =
-					window.location.search.includes("orm=") ||
-					window.location.search.includes("framework=");
-				if (!hasUrlParams) {
+	const setFramework = (framework: Framework) => {
+		const newConfig = { ...optimisticConfig, framework };
 
-					const validOrm =
-						parsed.orm && parsed.orm !== ("none" as any)
-							? parsed.orm
-							: "prisma";
-					setOrmState(validOrm);
-					if (parsed.framework) setFrameworkState(parsed.framework);
-				}
-			} catch {
-				// Invalid stored value, ignore
-			}
-		}
-		setIsLoaded(true);
-	}, [setOrmState, setFrameworkState]);
-
-	useEffect(() => {
-		if (isLoaded) {
-			localStorage.setItem(STORAGE_KEY, JSON.stringify({ orm, framework }));
-		}
-	}, [orm, framework, isLoaded]);
-
-	const setOrm = (v: ORM) => setOrmState(v);
-	const setFramework = (v: Framework) => setFrameworkState(v);
+		startTransition(async () => {
+			setOptimisticConfig(newConfig);
+			await setConfigAction(newConfig);
+		});
+	};
 
 	return (
 		<ConfigContext.Provider
-			value={{ config: { orm, framework }, setOrm, setFramework, isLoaded }}
+			value={{ config: optimisticConfig, setOrm, setFramework, isPending, isLoaded: true }}
 		>
 			{children}
 		</ConfigContext.Provider>
@@ -89,7 +67,6 @@ export function useConfig() {
 	return context;
 }
 
-
 export function useVariant(feature: keyof typeof VARIANTS): string[] | null {
 	const { config } = useConfig();
 	const variants = VARIANTS[feature];
@@ -100,7 +77,6 @@ export function useVariant(feature: keyof typeof VARIANTS): string[] | null {
 		const variant = variants[config.framework];
 		return variant ? [variant] : null;
 	}
-
 
 	const strategy = DEFAULT_STRATEGY[feature] || "monolithic";
 
