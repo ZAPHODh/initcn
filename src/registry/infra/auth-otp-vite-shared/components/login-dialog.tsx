@@ -15,25 +15,6 @@ interface LoginDialogProps {
 	description?: string;
 }
 
-/**
- * Login dialog component with OTP authentication
- *
- * Features:
- * - Modal overlay for login form
- * - Suspense boundary for better loading UX
- * - TanStack Router navigation
- * - Customizable title and description
- *
- * @example
- * ```tsx
- * // In TanStack Router with route masking
- * <LoginDialog
- *   redirectTo="/dashboard"
- *   title="Welcome back"
- *   description="Sign in to continue"
- * />
- * ```
- */
 export function LoginDialog({
 	redirectTo = "/dashboard",
 	title = "Welcome back",
@@ -43,7 +24,6 @@ export function LoginDialog({
 
 	function handleOpenChange(open: boolean) {
 		if (!open) {
-			// Navigate back or to a default route
 			navigate("/");
 		}
 	}
@@ -56,7 +36,6 @@ export function LoginDialog({
 					<DialogDescription>{description}</DialogDescription>
 				</DialogHeader>
 
-				{/* Suspense boundary for loading state */}
 				<Suspense fallback={<LoginDialogSkeleton />}>
 					<AuthForm
 						redirectTo={redirectTo}
@@ -89,10 +68,6 @@ export function LoginDialog({
 	);
 }
 
-/**
- * Loading skeleton for the login dialog
- * Shows while AuthForm is loading (if needed)
- */
 function LoginDialogSkeleton() {
 	return (
 		<div className="flex flex-col gap-4 animate-pulse">

@@ -7,28 +7,15 @@ import {
 	type RouteLoaderContext,
 } from "./route-protection";
 
-/**
- * QueryClient instance for the app
- *
- * Configure this according to your needs. The default configuration:
- * - staleTime: 5 minutes - data is considered fresh for 5 minutes
- * - gcTime: 10 minutes - unused data is garbage collected after 10 minutes
- */
 const queryClient = new QueryClient({
 	defaultOptions: {
 		queries: {
-			staleTime: 5 * 60 * 1000, // 5 minutes
-			gcTime: 10 * 60 * 1000, // 10 minutes
+			staleTime: 5 * 60 * 1000,
+			gcTime: 10 * 60 * 1000,
 		},
 	},
 });
 
-/**
- * Root layout component
- *
- * This wraps all routes with the QueryClientProvider to make
- * TanStack Query available throughout the app
- */
 function RootLayout() {
 	return (
 		<QueryClientProvider client={queryClient}>
@@ -37,31 +24,6 @@ function RootLayout() {
 	);
 }
 
-/**
- * Router configuration with React Router data router API
- *
- * This is an example router configuration. You should customize this
- * based on your app's routes and structure.
- *
- * Key features:
- * - Root loader prefetches user data on initial load
- * - Protected routes redirect to login if unauthenticated
- * - Guest-only routes (login) redirect to dashboard if authenticated
- * - Lazy loading for code splitting
- * - React Router v7 future flags for forward compatibility
- *
- * @example
- * ```tsx
- * // main.tsx
- * import { AppRouter } from '@/lib/server/auth/routes/router';
- *
- * ReactDOM.createRoot(document.getElementById('root')!).render(
- *   <React.StrictMode>
- *     <AppRouter />
- *   </React.StrictMode>
- * );
- * ```
- */
 export const router = createBrowserRouter(
 	[
 		{
@@ -71,7 +33,6 @@ export const router = createBrowserRouter(
 				rootLoader({ ...args, context: { queryClient } as RouteLoaderContext }),
 			children: [
 				{
-					// Login page - redirect authenticated users
 					path: "/login",
 					lazy: () => import("./pages/login"),
 					loader: (args) =>
@@ -81,7 +42,6 @@ export const router = createBrowserRouter(
 						}),
 				},
 				{
-					// Protected dashboard - require authentication
 					path: "/dashboard",
 					lazy: () => import("./pages/dashboard"),
 					loader: (args) =>
@@ -91,7 +51,6 @@ export const router = createBrowserRouter(
 						}),
 				},
 				{
-					// Example: Public homepage with optional auth
 					index: true,
 					lazy: () => import("./pages/home"),
 				},
@@ -99,7 +58,6 @@ export const router = createBrowserRouter(
 		},
 	],
 	{
-		// Enable React Router v7 future flags for forward compatibility
 		future: {
 			v7_startTransition: true,
 			v7_relativeSplatPath: true,
@@ -111,27 +69,6 @@ export const router = createBrowserRouter(
 	},
 );
 
-/**
- * App router component
- *
- * This is the main entry point for your app's routing.
- * Render this in your main.tsx file.
- *
- * @example
- * ```tsx
- * // main.tsx
- * import React from 'react';
- * import ReactDOM from 'react-dom/client';
- * import { AppRouter } from '@/lib/server/auth/routes/router';
- * import './index.css';
- *
- * ReactDOM.createRoot(document.getElementById('root')!).render(
- *   <React.StrictMode>
- *     <AppRouter />
- *   </React.StrictMode>
- * );
- * ```
- */
 export function AppRouter() {
 	return <RouterProvider router={router} />;
 }

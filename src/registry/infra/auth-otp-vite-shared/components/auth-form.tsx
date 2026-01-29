@@ -34,27 +34,6 @@ interface AuthFormProps {
 	};
 }
 
-/**
- * Authentication form component with two-step OTP flow
- *
- * Features:
- * - Email input with validation (Step 1)
- * - OTP verification (Step 2)
- * - Countdown timer for resend button
- * - Fully customizable labels for i18n
- * - Optimized with React best practices (memoization, useTransition)
- *
- * @example
- * ```tsx
- * <AuthForm
- *   redirectTo="/dashboard"
- *   labels={{
- *     emailPlaceholder: "seu@email.com",
- *     sendOtp: "Enviar código",
- *   }}
- * />
- * ```
- */
 export const AuthForm = memo(function AuthForm({
 	redirectTo = "/dashboard",
 	labels = {},
@@ -62,11 +41,8 @@ export const AuthForm = memo(function AuthForm({
 	const [currentStep, setCurrentStep] = useState<1 | 2>(1);
 	const [otp, setOTP] = useState("");
 	const [countdown, setCountdown] = useState(30);
-
-	// Use useTransition for non-blocking UI updates (React best practice)
 	const [isPending, startTransition] = useTransition();
 
-	// TanStack Query mutations
 	const sendOTP = useSendOTP({
 		onSuccess: () => {
 			startTransition(() => {
@@ -85,7 +61,6 @@ export const AuthForm = memo(function AuthForm({
 		},
 	});
 
-	// TanStack Form for email input
 	const form = useForm({
 		defaultValues: {
 			email: "",
@@ -95,7 +70,6 @@ export const AuthForm = memo(function AuthForm({
 		},
 	});
 
-	// Countdown timer with functional setState (React best practice)
 	useEffect(() => {
 		if (countdown <= 0) return;
 
@@ -106,7 +80,6 @@ export const AuthForm = memo(function AuthForm({
 		return () => clearInterval(intervalId);
 	}, [countdown]);
 
-	// Memoize label computations (React best practice)
 	const emailPlaceholder = useMemo(
 		() => labels.emailPlaceholder ?? "you@example.com",
 		[labels.emailPlaceholder],
@@ -122,7 +95,6 @@ export const AuthForm = memo(function AuthForm({
 		[labels.emailInvalid],
 	);
 
-	// Memoize email validation (React best practice)
 	const validateEmail = useCallback(
 		(value: string) => {
 			if (!value) return emailRequired;
@@ -134,7 +106,6 @@ export const AuthForm = memo(function AuthForm({
 		[emailRequired, emailInvalid],
 	);
 
-	// Handle OTP verification
 	const handleOTPSubmit = useCallback(
 		async (e: React.FormEvent) => {
 			e.preventDefault();
@@ -146,7 +117,6 @@ export const AuthForm = memo(function AuthForm({
 		[form, otp, verifyOTP],
 	);
 
-	// Handle resend OTP
 	const handleResend = useCallback(async () => {
 		const email = form.getFieldValue("email");
 		if (!email) return;
@@ -156,7 +126,6 @@ export const AuthForm = memo(function AuthForm({
 		await sendOTP.mutateAsync(email);
 	}, [form, sendOTP]);
 
-	// Handle change email
 	const handleChangeEmail = useCallback(() => {
 		startTransition(() => {
 			setCurrentStep(1);
@@ -164,7 +133,6 @@ export const AuthForm = memo(function AuthForm({
 		});
 	}, []);
 
-	// Early return for step 1 (React best practice)
 	if (currentStep === 1) {
 		return (
 			<div className="flex max-w-full flex-col gap-4">
@@ -215,7 +183,6 @@ export const AuthForm = memo(function AuthForm({
 		);
 	}
 
-	// Step 2: OTP verification
 	return (
 		<div className="flex max-w-full flex-col gap-4">
 			<p className="text-center text-sm text-gray-600">

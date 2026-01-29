@@ -14,27 +14,6 @@ import type {
 	LogoutResponse,
 } from "../types";
 
-/**
- * Hook for sending OTP to user's email
- *
- * @example
- * ```tsx
- * function LoginForm() {
- *   const sendOTP = useSendOTP();
- *
- *   async function handleSubmit(email: string) {
- *     await sendOTP.mutateAsync(email);
- *     setStep(2); // Move to OTP verification step
- *   }
- *
- *   return (
- *     <button onClick={() => handleSubmit(email)} disabled={sendOTP.isPending}>
- *       {sendOTP.isPending ? 'Sending...' : 'Send Code'}
- *     </button>
- *   );
- * }
- * ```
- */
 export function useSendOTP(
 	options?: UseMutationOptions<SendOTPResponse, Error, string>,
 ) {
@@ -50,7 +29,6 @@ export function useSendOTP(
 			const data: SendOTPResponse = await response.json();
 
 			if (!response.ok) {
-				// Handle rate limiting
 				if (response.status === 429) {
 					throw new Error(
 						data.message ||
@@ -73,27 +51,6 @@ export function useSendOTP(
 	});
 }
 
-/**
- * Hook for verifying OTP and logging in
- *
- * @example
- * ```tsx
- * function OTPVerificationForm() {
- *   const verifyOTP = useVerifyOTP();
- *
- *   async function handleVerify(email: string, code: string) {
- *     await verifyOTP.mutateAsync({ email, code });
- *     // User is now logged in, query cache is updated
- *   }
- *
- *   return (
- *     <button onClick={() => handleVerify(email, code)} disabled={verifyOTP.isPending}>
- *       {verifyOTP.isPending ? 'Verifying...' : 'Verify'}
- *     </button>
- *   );
- * }
- * ```
- */
 export function useVerifyOTP(
 	options?: UseMutationOptions<VerifyOTPResponse, Error, VerifyOTPRequest>,
 ) {
@@ -108,13 +65,12 @@ export function useVerifyOTP(
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(request),
-				credentials: "include", // Backend will set httpOnly cookies
+				credentials: "include",
 			});
 
 			const data: VerifyOTPResponse = await response.json();
 
 			if (!response.ok) {
-				// Handle rate limiting
 				if (response.status === 429) {
 					throw new Error(
 						data.message || "Too many attempts. Please try again later.",
@@ -132,17 +88,14 @@ export function useVerifyOTP(
 			toast.error(error.message || "Failed to verify code");
 		},
 		onSuccess: (data) => {
-			// Update the current user in the cache with the returned user data
 			if (data.user) {
 				queryClient.setQueryData(authKeys.currentUser(), data.user);
 			}
 
-			// Alternatively, invalidate to refetch from server
 			queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
 
 			toast.success(data.message || "Login successful");
 
-			// Navigate to dashboard or redirect URL
 			const redirect = new URLSearchParams(window.location.search).get(
 				"redirect",
 			);
@@ -152,22 +105,6 @@ export function useVerifyOTP(
 	});
 }
 
-/**
- * Hook for logging out the current user
- *
- * @example
- * ```tsx
- * function LogoutButton() {
- *   const logout = useLogout();
- *
- *   return (
- *     <button onClick={() => logout.mutate()} disabled={logout.isPending}>
- *       {logout.isPending ? 'Logging out...' : 'Logout'}
- *     </button>
- *   );
- * }
- * ```
- */
 export function useLogout(
 	options?: UseMutationOptions<LogoutResponse, Error, void>,
 ) {
@@ -193,38 +130,17 @@ export function useLogout(
 			toast.error(error.message || "Failed to logout");
 		},
 		onSuccess: () => {
-			// Clear the current user from cache
 			queryClient.setQueryData(authKeys.currentUser(), null);
-
-			// Clear all cached data (optional, but recommended for security)
 			queryClient.clear();
 
 			toast.success("Logged out successfully");
 
-			// Navigate to login page
 			navigate("/login");
 		},
 		...options,
 	});
 }
 
-/**
- * Hook for refreshing the access token
- *
- * This is typically called automatically by an interceptor when a 401 is received
- * You generally don't need to call this manually
- *
- * @example
- * ```tsx
- * const refreshToken = useRefreshToken();
- *
- * // In an API interceptor
- * if (response.status === 401) {
- *   await refreshToken.mutateAsync();
- *   // Retry original request
- * }
- * ```
- */
 export function useRefreshToken(
 	options?: UseMutationOptions<void, Error, void>,
 ) {
@@ -238,10 +154,8 @@ export function useRefreshToken(
 			if (!response.ok) {
 				throw new Error("Failed to refresh token");
 			}
-
-			// Backend sets new access token cookie
 		},
-		retry: false, // Don't retry refresh token requests
+		retry: false,
 		...options,
 	});
 }
