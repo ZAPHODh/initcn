@@ -6,7 +6,7 @@ import {
 	InputOTPGroup,
 	InputOTPSlot,
 } from "@/registry/ui/input-otp";
-import { useSendOTP, useVerifyOTP } from "../client/auth-mutations";
+import { useSendOTP, useVerifyOTP } from "@/lib/client/auth-mutations";
 
 interface AuthFormProps {
 	redirectTo?: string;

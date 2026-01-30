@@ -1,4 +1,4 @@
-import { revokeRefreshToken, createTokenHash } from "../server/session";
+import { revokeRefreshToken, createTokenHash } from "@/lib/server/auth/session";
 import type { LogoutResponse } from "@/lib/types";
 
 export async function logoutHandler(request: {

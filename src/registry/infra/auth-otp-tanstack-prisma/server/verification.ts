@@ -1,4 +1,4 @@
-import { prisma } from "../db";
+import { prisma } from "@/lib/server/auth/db";
 import { generateOTP, getOTPExpiry, isOTPExpired } from "@/lib/server/auth/server/otp";
 import type { VerificationCode } from "@/lib/server/auth/types";
 

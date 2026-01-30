@@ -3,7 +3,7 @@
  * Define feature flags and limits for each subscription tier
  */
 
-import type { PlanType, SubscriptionPlan } from "../types";
+import type { PlanType, SubscriptionPlan } from "@/lib/server/payment/types";
 
 /**
  * Plan limits interface

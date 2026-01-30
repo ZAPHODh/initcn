@@ -1,6 +1,6 @@
 import { useQuery, useSuspenseQuery, type QueryClient } from "@tanstack/react-query";
 import { authKeys } from "./query-keys";
-import type { User, MeResponse } from "../types";
+import type { User, MeResponse } from "@/lib/server/auth/types";
 
 /**
  * Fetch the current authenticated user from the backend

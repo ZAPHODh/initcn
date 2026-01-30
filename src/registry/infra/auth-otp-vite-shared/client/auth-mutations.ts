@@ -12,7 +12,7 @@ import type {
 	VerifyOTPRequest,
 	VerifyOTPResponse,
 	LogoutResponse,
-} from "../types";
+} from "@/lib/server/auth/types";
 
 export function useSendOTP(
 	options?: UseMutationOptions<SendOTPResponse, Error, string>,

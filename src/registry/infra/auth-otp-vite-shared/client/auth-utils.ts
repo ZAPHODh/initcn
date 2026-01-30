@@ -1,5 +1,5 @@
-import { decodeJWTUnsafe } from "../server/jwt";
-import type { JWTPayload } from "../types";
+import { decodeJWTUnsafe } from "@/lib/server/auth/jwt";
+import type { JWTPayload } from "@/lib/server/auth/types";
 
 /**
  * Fetch wrapper with automatic token refresh

@@ -1,5 +1,5 @@
-import { verifyRefreshToken } from "../server/session";
-import { getUserById } from "../server/user";
+import { verifyRefreshToken } from "@/lib/server/auth/session";
+import { getUserById } from "@/lib/server/auth/user";
 import { generateAccessToken } from "@/lib/server/jwt";
 import type { RefreshTokenResponse } from "@/lib/types";
 

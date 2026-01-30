@@ -1,6 +1,6 @@
 import { sha256 } from "@oslojs/crypto/sha2";
 import { encodeHexLowerCase } from "@oslojs/encoding";
-import { prisma } from "../db";
+import { prisma } from "@/lib/server/auth/db";
 import { verifyToken, generateRefreshToken } from "@/lib/server/auth/server/jwt";
 import type { User } from "@/lib/server/auth/types";
 

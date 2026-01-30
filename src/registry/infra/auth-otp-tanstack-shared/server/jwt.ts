@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
-import type { JWTPayload } from "../types";
+import type { JWTPayload } from "@/lib/server/auth/types";
 
 // Environment variable checks
 const JWT_SECRET = process.env.JWT_SECRET;

@@ -1,7 +1,7 @@
-import { findOrCreateUser } from "../server/user";
-import { generateAndStoreOTP } from "../server/verification";
-import { sendOTP } from "../mail";
-import { rateLimitByEmail, rateLimitByIP } from "../rate-limit";
+import { findOrCreateUser } from "@/lib/server/auth/user";
+import { generateAndStoreOTP } from "@/lib/server/auth/verification";
+import { sendOTP } from "@/lib/server/auth/mail";
+import { rateLimitByEmail, rateLimitByIP } from "@/lib/server/auth/rate-limit";
 import { normalizeEmail, validateEmail } from "@/lib/server/utils";
 import type { SendOTPRequest, SendOTPResponse } from "@/lib/types";
 

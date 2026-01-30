@@ -103,10 +103,10 @@ function generateRegistry(
 	const allFiles = getAllRegistryFiles(sourceDir);
 
 	const registryFiles: RegistryFile[] = allFiles.map((filePath) => ({
-		path: relative(ROOT_DIR, filePath),
+		path: relative(ROOT_DIR, filePath).replace(/\\/g, "/"),
 		content: readFileSync(filePath, "utf-8"),
 		type: getFileType(filePath, sourceDir),
-		target: builder.getTargetPath(filePath, sourceDir, config.name, config),
+		target: builder.getTargetPath(filePath, sourceDir, config.name, config).replace(/\\/g, "/"),
 	}));
 
 	const item: RegistryItem = {

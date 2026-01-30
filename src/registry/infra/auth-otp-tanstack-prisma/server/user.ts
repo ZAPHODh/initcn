@@ -1,4 +1,4 @@
-import { prisma } from "../db";
+import { prisma } from "@/lib/server/auth/db";
 import type { User } from "@/lib/server/auth/types";
 
 /**

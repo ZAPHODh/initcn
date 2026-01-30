@@ -6,7 +6,7 @@
 import type Stripe from "stripe";
 import type { PlanType } from "payment-stripe-shared";
 import { getPlanTypeFromPriceId } from "payment-stripe-shared";
-import { stripe } from "../db";
+import { stripe } from "@/lib/server/payment/db";
 
 /**
  * Process checkout.session.completed event

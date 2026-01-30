@@ -1,7 +1,7 @@
-import { validateOTP } from "../server/verification";
-import { getUserById, updateUser } from "../server/user";
-import { storeRefreshToken } from "../server/session";
-import { rateLimitByEmail, rateLimitByIP } from "../rate-limit";
+import { validateOTP } from "@/lib/server/auth/verification";
+import { getUserById, updateUser } from "@/lib/server/auth/user";
+import { storeRefreshToken } from "@/lib/server/auth/session";
+import { rateLimitByEmail, rateLimitByIP } from "@/lib/server/auth/rate-limit";
 import { normalizeEmail, validateEmail } from "@/lib/server/auth/server/utils";
 import {
 	generateAccessToken,

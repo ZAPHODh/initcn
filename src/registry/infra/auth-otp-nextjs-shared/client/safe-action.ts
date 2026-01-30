@@ -1,6 +1,6 @@
 import { createSafeActionClient } from "next-safe-action";
 import { z } from "zod";
-import { authMiddleware } from "../server/middleware";
+import { authMiddleware } from "@/lib/server/auth/middleware";
 
 export const actionClient = createSafeActionClient({
   defineMetadataSchema: () =>

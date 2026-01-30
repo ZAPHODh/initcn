@@ -5,8 +5,8 @@ import {
 	encodeBase32LowerCaseNoPadding,
 	encodeHexLowerCase,
 } from "@oslojs/encoding";
-import { db } from "../db";
-import { sessions } from "../schemas/drizzle.schema";
+import { db } from "@/lib/server/auth/db";
+import { sessions } from "@/lib/server/auth/schemas/drizzle.schema";
 import { getSessionTokenCookie } from "@/lib/server/auth/server/cookies";
 import type { SessionValidationResult } from "@/lib/server/auth/types";
 

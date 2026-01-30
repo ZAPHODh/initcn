@@ -1,4 +1,4 @@
-import { verifyAccessToken } from "../server/session";
+import { verifyAccessToken } from "@/lib/server/auth/session";
 import type { MeResponse } from "@/lib/server/auth/types";
 
 /**

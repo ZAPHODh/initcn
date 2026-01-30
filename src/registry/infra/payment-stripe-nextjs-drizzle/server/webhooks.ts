@@ -2,8 +2,8 @@ import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 import type { PlanType } from "payment-stripe-shared";
 import { getPlanTypeFromPriceId } from "payment-stripe-shared";
-import { stripe } from "../db";
-import { stripeWebhookEvents, users } from "../schemas/drizzle.schema";
+import { stripe } from "@/lib/server/payment/db";
+import { stripeWebhookEvents, users } from "@/lib/server/payment/schemas/drizzle.schema";
 
 export async function processCheckoutCompleted(
 	session: Stripe.Checkout.Session,

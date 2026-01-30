@@ -7,7 +7,7 @@ import {
 	PLAN_LIMITS,
 	getPlanTypeFromPriceId,
 } from "payment-stripe-shared";
-import { users } from "../schemas/drizzle.schema";
+import { users } from "@/lib/server/payment/schemas/drizzle.schema";
 
 export async function getUserSubscriptionPlan(
 	userId: string,

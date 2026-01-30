@@ -3,7 +3,7 @@
  * Handles pricing configuration for different currencies and locales
  */
 
-import type { Currency, Locale, PlanPricing, PricingInfo, PlanType } from "../types";
+import type { Currency, Locale, PlanPricing, PricingInfo, PlanType } from "@/lib/server/payment/types";
 
 const PRICING_CONFIG: Record<Currency, PlanPricing> = {
 	BRL: {

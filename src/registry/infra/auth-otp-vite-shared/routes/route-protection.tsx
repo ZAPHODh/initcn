@@ -1,7 +1,7 @@
 import { redirect, type LoaderFunctionArgs } from "react-router-dom";
 import type { QueryClient } from "@tanstack/react-query";
-import { ensureCurrentUser } from "../client/auth-queries";
-import type { User } from "../types";
+import { ensureCurrentUser } from "@/lib/client/auth-queries";
+import type { User } from "@/lib/server/auth/types";
 
 export interface RouteLoaderContext {
 	queryClient: QueryClient;

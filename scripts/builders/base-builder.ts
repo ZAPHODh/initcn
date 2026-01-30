@@ -152,7 +152,12 @@ export abstract class BaseInfraBuilder implements InfraBuilder {
 		if (target.includes("*.")) {
 			const filename = sourcePath.split("/").pop();
 			if (filename) {
-				result = result.replace("*.", filename);
+				// Extract base name without extension
+				const baseName = filename.replace(/\.[^.]+$/, "");
+				// Extract extension from target pattern (e.g., ".tsx" from "components/*.tsx")
+				const targetExt = target.match(/\*(\.[^/]+)$/)?.[1] || "";
+				// Replace the wildcard pattern with basename + target extension
+				result = result.replace(/\*\.[^/]+$/, baseName + targetExt);
 			}
 		}
 

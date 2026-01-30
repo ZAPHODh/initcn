@@ -4,7 +4,7 @@ import {
 	encodeBase32LowerCaseNoPadding,
 	encodeHexLowerCase,
 } from "@oslojs/encoding";
-import { prisma } from "../db";
+import { prisma } from "@/lib/server/auth/db";
 import { getSessionTokenCookie } from "@/lib/server/auth/server/cookies";
 import type { SessionValidationResult } from "@/lib/server/auth/types";
 
