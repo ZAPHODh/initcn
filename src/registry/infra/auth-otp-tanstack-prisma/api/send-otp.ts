@@ -76,13 +76,13 @@ export async function sendOTPHandler(request: {
 			};
 		}
 
-		// 3. Find or create user
-		const user = await findOrCreateUser(email, { emailVerified: false });
+		const userPromise = findOrCreateUser(email, { emailVerified: false });
+		const otpPromise = userPromise.then((user) =>
+			generateAndStoreOTP(user.id, email),
+		);
 
-		// 4. Generate and store OTP
-		const code = await generateAndStoreOTP(user.id, email);
+		const [user, code] = await Promise.all([userPromise, otpPromise]);
 
-		// 5. Send email with OTP
 		await sendOTP({
 			to: email,
 			code,

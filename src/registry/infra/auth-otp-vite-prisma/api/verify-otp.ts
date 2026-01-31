@@ -92,8 +92,10 @@ export async function verifyOTPHandler(request: {
 			user.emailVerified = true;
 		}
 
-		const accessToken = await generateAccessToken(user.id, user.email);
-		const refreshToken = await generateRefreshToken(user.id);
+		const [accessToken, refreshToken] = await Promise.all([
+			generateAccessToken(user.id, user.email),
+			generateRefreshToken(user.id),
+		]);
 
 		const refreshTokenExpiry = getTokenExpiry(
 			process.env.JWT_REFRESH_EXPIRY || "30d",

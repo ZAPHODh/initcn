@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { toast } from "sonner";
 import {
@@ -7,6 +7,10 @@ import {
 	InputOTPSlot,
 } from "@/registry/ui/input-otp";
 import { useSendOTP, useVerifyOTP } from "@/lib/client/auth-mutations";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const DEFAULT_LABELS = {};
+const DEFAULT_REDIRECT = "/dashboard";
 
 interface AuthFormProps {
 	redirectTo?: string;
@@ -56,32 +60,24 @@ interface AuthFormProps {
  * ```
  */
 export const AuthForm = memo(function AuthForm({
-	redirectTo = "/dashboard",
-	labels = {},
+	redirectTo = DEFAULT_REDIRECT,
+	labels = DEFAULT_LABELS,
 }: AuthFormProps) {
 	const [currentStep, setCurrentStep] = useState<1 | 2>(1);
 	const [otp, setOTP] = useState("");
 	const [countdown, setCountdown] = useState(30);
 
-	// Use useTransition for non-blocking UI updates (React best practice)
-	const [isPending, startTransition] = useTransition();
-
-	// TanStack Query mutations
 	const sendOTP = useSendOTP({
 		onSuccess: () => {
-			startTransition(() => {
-				setCurrentStep(2);
-				setCountdown(30);
-			});
+			setCurrentStep(2);
+			setCountdown(30);
 		},
 	});
 
 	const verifyOTP = useVerifyOTP({
 		onSuccess: () => {
-			startTransition(() => {
-				setCountdown(0);
-				form.reset();
-			});
+			setCountdown(0);
+			form.reset();
 		},
 	});
 
@@ -95,7 +91,6 @@ export const AuthForm = memo(function AuthForm({
 		},
 	});
 
-	// Countdown timer with functional setState (React best practice)
 	useEffect(() => {
 		if (countdown <= 0) return;
 
@@ -106,27 +101,14 @@ export const AuthForm = memo(function AuthForm({
 		return () => clearInterval(intervalId);
 	}, [countdown]);
 
-	// Memoize label computations (React best practice)
-	const emailPlaceholder = useMemo(
-		() => labels.emailPlaceholder ?? "you@example.com",
-		[labels.emailPlaceholder],
-	);
+	const emailPlaceholder = labels.emailPlaceholder ?? "you@example.com";
+	const emailRequired = labels.emailRequired ?? "Email is required";
+	const emailInvalid = labels.emailInvalid ?? "Invalid email address";
 
-	const emailRequired = useMemo(
-		() => labels.emailRequired ?? "Email is required",
-		[labels.emailRequired],
-	);
-
-	const emailInvalid = useMemo(
-		() => labels.emailInvalid ?? "Invalid email address",
-		[labels.emailInvalid],
-	);
-
-	// Memoize email validation (React best practice)
 	const validateEmail = useCallback(
 		(value: string) => {
 			if (!value) return emailRequired;
-			if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+			if (!EMAIL_REGEX.test(value)) {
 				return emailInvalid;
 			}
 			return undefined;
@@ -156,15 +138,10 @@ export const AuthForm = memo(function AuthForm({
 		await sendOTP.mutateAsync(email);
 	}, [form, sendOTP]);
 
-	// Handle change email
 	const handleChangeEmail = useCallback(() => {
-		startTransition(() => {
-			setCurrentStep(1);
-			setOTP("");
-		});
+		setCurrentStep(1);
+		setOTP("");
 	}, []);
-
-	// Early return for step 1 (React best practice)
 	if (currentStep === 1) {
 		return (
 			<div className="flex max-w-full flex-col gap-4">

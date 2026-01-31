@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { toast } from "sonner";
 import {
@@ -7,6 +7,10 @@ import {
 	InputOTPSlot,
 } from "@/registry/ui/input-otp";
 import { useSendOTP, useVerifyOTP } from "@/lib/client/auth-mutations";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const DEFAULT_LABELS = {};
+const DEFAULT_REDIRECT = "/dashboard";
 
 interface AuthFormProps {
 	redirectTo?: string;
@@ -35,29 +39,24 @@ interface AuthFormProps {
 }
 
 export const AuthForm = memo(function AuthForm({
-	redirectTo = "/dashboard",
-	labels = {},
+	redirectTo = DEFAULT_REDIRECT,
+	labels = DEFAULT_LABELS,
 }: AuthFormProps) {
 	const [currentStep, setCurrentStep] = useState<1 | 2>(1);
 	const [otp, setOTP] = useState("");
 	const [countdown, setCountdown] = useState(30);
-	const [isPending, startTransition] = useTransition();
 
 	const sendOTP = useSendOTP({
 		onSuccess: () => {
-			startTransition(() => {
-				setCurrentStep(2);
-				setCountdown(30);
-			});
+			setCurrentStep(2);
+			setCountdown(30);
 		},
 	});
 
 	const verifyOTP = useVerifyOTP({
 		onSuccess: () => {
-			startTransition(() => {
-				setCountdown(0);
-				form.reset();
-			});
+			setCountdown(0);
+			form.reset();
 		},
 	});
 
@@ -80,25 +79,14 @@ export const AuthForm = memo(function AuthForm({
 		return () => clearInterval(intervalId);
 	}, [countdown]);
 
-	const emailPlaceholder = useMemo(
-		() => labels.emailPlaceholder ?? "you@example.com",
-		[labels.emailPlaceholder],
-	);
-
-	const emailRequired = useMemo(
-		() => labels.emailRequired ?? "Email is required",
-		[labels.emailRequired],
-	);
-
-	const emailInvalid = useMemo(
-		() => labels.emailInvalid ?? "Invalid email address",
-		[labels.emailInvalid],
-	);
+	const emailPlaceholder = labels.emailPlaceholder ?? "you@example.com";
+	const emailRequired = labels.emailRequired ?? "Email is required";
+	const emailInvalid = labels.emailInvalid ?? "Invalid email address";
 
 	const validateEmail = useCallback(
 		(value: string) => {
 			if (!value) return emailRequired;
-			if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+			if (!EMAIL_REGEX.test(value)) {
 				return emailInvalid;
 			}
 			return undefined;
@@ -127,10 +115,8 @@ export const AuthForm = memo(function AuthForm({
 	}, [form, sendOTP]);
 
 	const handleChangeEmail = useCallback(() => {
-		startTransition(() => {
-			setCurrentStep(1);
-			setOTP("");
-		});
+		setCurrentStep(1);
+		setOTP("");
 	}, []);
 
 	if (currentStep === 1) {
