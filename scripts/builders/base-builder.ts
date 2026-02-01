@@ -28,8 +28,8 @@ export abstract class BaseInfraBuilder implements InfraBuilder {
 		// App pages
 		"app/*": "app/*",
 
-		// Components (flattened - multiple files become single file)
-		"components/*": "components/*.tsx",
+		// Components (preserve source extension)
+		"components/*": "components/*",
 
 		// Actions
 		"actions/*": "app/actions/*",
