@@ -11,20 +11,12 @@ export function Component() {
 					</p>
 				</div>
 
-				<div className="flex flex-col gap-3">
-					<Link
-						to="/login"
-						className="inline-flex h-10 items-center justify-center rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-black/90"
-					>
-						Sign In
-					</Link>
-					<Link
-						to="/dashboard"
-						className="inline-flex h-10 items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50"
-					>
-						Go to Dashboard
-					</Link>
-				</div>
+				<Link
+					to="/login"
+					className="inline-flex h-10 items-center justify-center rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-black/90"
+				>
+					Sign In
+				</Link>
 			</div>
 		</div>
 	);

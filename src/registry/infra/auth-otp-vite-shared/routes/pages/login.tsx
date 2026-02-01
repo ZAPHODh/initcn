@@ -12,7 +12,7 @@ export function Component() {
 				</div>
 
 				<AuthForm
-					redirectTo="/dashboard"
+					redirectTo="/"
 					labels={{
 						emailPlaceholder: "you@example.com",
 						sendOtp: "Send OTP",

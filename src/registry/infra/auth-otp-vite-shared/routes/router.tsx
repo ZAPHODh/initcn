@@ -2,7 +2,6 @@ import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
 	rootLoader,
-	protectedLoader,
 	guestOnlyLoader,
 	type RouteLoaderContext,
 } from "./route-protection";
@@ -37,15 +36,6 @@ export const router = createBrowserRouter(
 					lazy: () => import("./pages/login"),
 					loader: (args) =>
 						guestOnlyLoader({
-							...args,
-							context: { queryClient } as RouteLoaderContext,
-						}),
-				},
-				{
-					path: "/dashboard",
-					lazy: () => import("./pages/dashboard"),
-					loader: (args) =>
-						protectedLoader({
 							...args,
 							context: { queryClient } as RouteLoaderContext,
 						}),
