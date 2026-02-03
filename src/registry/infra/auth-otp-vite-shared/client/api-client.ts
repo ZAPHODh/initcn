@@ -1,9 +1,7 @@
 let csrfToken: string | null = null;
 let csrfSignature: string | null = null;
 
-/**
- * Refresh CSRF tokens from the server.
- */
+
 export async function refreshCSRFToken(): Promise<void> {
 	try {
 		const response = await fetch("/api/auth/csrf");
@@ -20,10 +18,7 @@ export async function refreshCSRFToken(): Promise<void> {
 	}
 }
 
-/**
- * Fetch wrapper that automatically includes CSRF tokens.
- * Use this for all authenticated API requests.
- */
+
 export async function authenticatedFetch(
 	url: string,
 	options: RequestInit = {},
@@ -40,13 +35,11 @@ export async function authenticatedFetch(
 			"X-CSRF-Token": csrfToken!,
 			"X-CSRF-Signature": csrfSignature!,
 		},
-		credentials: "include", // Include cookies
+		credentials: "include", 
 	});
 }
 
-/**
- * Clear cached CSRF tokens (call on logout or CSRF error).
- */
+
 export function clearCSRFTokens(): void {
 	csrfToken = null;
 	csrfSignature = null;

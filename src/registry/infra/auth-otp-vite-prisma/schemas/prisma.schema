@@ -1,7 +1,4 @@
-// Prisma schema for auth-otp (Vite + JWT)
-//
-// Add these models to your existing schema.prisma file
-// Or create a new schema file if starting from scratch
+
 
 // User model
 model User {
@@ -18,9 +15,7 @@ model User {
   emailVerificationCodes EmailVerificationCode[]
 }
 
-// RefreshToken model (replaces Session for JWT-based auth)
-// Access tokens are validated locally (no DB hit)
-// Refresh tokens are stored in DB for revocation
+
 model RefreshToken {
   id        String   @id @default(cuid())
   userId    String
@@ -34,7 +29,7 @@ model RefreshToken {
   @@index([tokenHash])
 }
 
-// Email verification code model (unchanged)
+
 model EmailVerificationCode {
   id        String   @id @default(cuid())
   userId    String

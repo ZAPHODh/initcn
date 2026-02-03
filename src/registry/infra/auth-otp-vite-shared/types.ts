@@ -1,4 +1,4 @@
-// Core domain types - database-agnostic
+
 export interface User {
 	id: string;
 	email: string;
@@ -9,20 +9,20 @@ export interface User {
 	updatedAt: Date;
 }
 
-// JWT payload interface (follows standard JWT claims)
+
 export interface JWTPayload {
-	sub: string; // userId (standard JWT claim)
+	sub: string; 
 	email: string;
-	exp: number; // Expiration timestamp (Unix timestamp)
-	iat: number; // Issued at timestamp (Unix timestamp)
+	exp: number;
+	iat: number;
 	type: "access" | "refresh";
 }
 
-// Refresh token database model (for revocation tracking)
+
 export interface RefreshToken {
 	id: string;
 	userId: string;
-	tokenHash: string; // SHA256 hash of the refresh token
+	tokenHash: string; 
 	expiresAt: Date;
 	revoked: boolean;
 	createdAt: Date;
@@ -37,12 +37,11 @@ export interface VerificationCode {
 	createdAt: Date;
 }
 
-// Auth validation result (for TanStack Query)
+
 export interface AuthValidationResult {
 	user: User | null;
 }
 
-// Request/Response types for API routes
 export interface SendOTPRequest {
 	email: string;
 }
