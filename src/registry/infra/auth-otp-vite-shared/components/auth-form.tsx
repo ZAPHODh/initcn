@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { toast } from "sonner";
 import {
@@ -7,8 +7,9 @@ import {
 	InputOTPSlot,
 } from "@/registry/ui/input-otp";
 import { useSendOTP, useVerifyOTP } from "@/lib/client/auth-mutations";
+import { EMAIL_REGEX } from "@/lib/server/utils";
+import { OTP_CONFIG } from "@/lib/constants/auth";
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DEFAULT_LABELS = {};
 const DEFAULT_REDIRECT = "/dashboard";
 
@@ -38,18 +39,18 @@ interface AuthFormProps {
 	};
 }
 
-export const AuthForm = memo(function AuthForm({
+export function AuthForm({
 	redirectTo = DEFAULT_REDIRECT,
 	labels = DEFAULT_LABELS,
 }: AuthFormProps) {
 	const [currentStep, setCurrentStep] = useState<1 | 2>(1);
 	const [otp, setOTP] = useState("");
-	const [countdown, setCountdown] = useState(30);
+	const [countdown, setCountdown] = useState(OTP_CONFIG.COUNTDOWN_SECONDS);
 
 	const sendOTP = useSendOTP({
 		onSuccess: () => {
 			setCurrentStep(2);
-			setCountdown(30);
+			setCountdown(OTP_CONFIG.COUNTDOWN_SECONDS);
 		},
 	});
 
@@ -59,6 +60,14 @@ export const AuthForm = memo(function AuthForm({
 			form.reset();
 		},
 	});
+
+	// Focus OTP input when step changes to step 2
+	useEffect(() => {
+		if (currentStep === 2) {
+			const otpInput = document.querySelector('[id="otp"]') as HTMLElement;
+			otpInput?.focus();
+		}
+	}, [currentStep]);
 
 	const form = useForm({
 		defaultValues: {
@@ -147,7 +156,7 @@ export const AuthForm = memo(function AuthForm({
 										className="px-3 py-2 border rounded-md"
 									/>
 									{field.state.meta.errors?.[0] && (
-										<p className="text-xs text-red-600">
+										<p className="text-xs text-red-600" role="alert" aria-live="polite">
 											{field.state.meta.errors[0]}
 										</p>
 									)}
@@ -191,7 +200,7 @@ export const AuthForm = memo(function AuthForm({
 							disabled={verifyOTP.isPending}
 							value={otp}
 							onChange={setOTP}
-							maxLength={6}
+							maxLength={OTP_CONFIG.LENGTH}
 						>
 							<InputOTPGroup className="flex gap-2">
 								<InputOTPSlot index={0} />
@@ -206,7 +215,7 @@ export const AuthForm = memo(function AuthForm({
 				</div>
 				<button
 					type="submit"
-					disabled={verifyOTP.isPending || otp.length !== 6}
+					disabled={verifyOTP.isPending || otp.length !== OTP_CONFIG.LENGTH}
 					className="px-4 py-2 bg-black text-white rounded-md disabled:opacity-50"
 				>
 					{verifyOTP.isPending
@@ -217,7 +226,9 @@ export const AuthForm = memo(function AuthForm({
 			<div className="flex items-center justify-between text-sm text-gray-600">
 				<span>{labels.didNotReceive ?? "Didn't receive the code?"}</span>
 				{countdown > 0 ? (
-					<span>{labels.resendIn?.(countdown) ?? `Resend in ${countdown}s`}</span>
+					<span aria-live="polite" aria-atomic="true">
+						{labels.resendIn?.(countdown) ?? `Resend in ${countdown}s`}
+					</span>
 				) : (
 					<button
 						type="button"
@@ -240,4 +251,4 @@ export const AuthForm = memo(function AuthForm({
 			</button>
 		</div>
 	);
-});
+}

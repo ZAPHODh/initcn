@@ -1,90 +1,164 @@
 import { validateOTP } from "@/lib/server/auth/verification";
 import { getUserById, updateUser } from "@/lib/server/auth/user";
 import { storeRefreshToken } from "@/lib/server/auth/session";
-import { rateLimitByEmail, rateLimitByIP } from "@/lib/server/auth/rate-limit";
-import { normalizeEmail, validateEmail } from "@/lib/server/utils";
+import {
+	rateLimitByEmail,
+	rateLimitByIP,
+	trackFailedAttempt,
+	resetFailedAttempts,
+} from "@/lib/server/auth/rate-limit";
+import { normalizeEmail, validateEmail, extractClientIP } from "@/lib/server/utils";
 import {
 	generateAccessToken,
 	generateRefreshToken,
 	getTokenExpiry,
 } from "@/lib/server/jwt";
+import { serializeSecureCookie } from "@/lib/server/auth/cookie-utils";
+import { validateCSRFFromRequest } from "@/lib/server/auth/csrf";
+import { OTP_CONFIG, RATE_LIMITS, TOKEN_CONFIG } from "@/lib/constants/auth";
 import type { VerifyOTPRequest, VerifyOTPResponse } from "@/lib/types";
 
-export async function verifyOTPHandler(request: {
-	email: string;
-	code: string;
-	clientIP: string;
-}): Promise<
-	VerifyOTPResponse & { accessToken?: string; refreshToken?: string }
-> {
-	try {
-		const email = normalizeEmail(request.email);
-
-		if (!email || !validateEmail(email)) {
-			return {
+export async function POST(request: Request): Promise<Response> {
+	// CSRF validation (SEC-002 fix)
+	if (!validateCSRFFromRequest(request)) {
+		return Response.json(
+			{
 				success: false,
-				message: "Invalid email address",
-				error: "INVALID_EMAIL",
-			};
+				message: "Invalid CSRF token",
+			} satisfies VerifyOTPResponse,
+			{ status: 403 },
+		);
+	}
+
+	try {
+		const body = (await request.json()) as VerifyOTPRequest;
+		const email = normalizeEmail(body.email);
+		const code = body.code?.trim();
+
+		if (!email || !code) {
+			return Response.json(
+				{
+					success: false,
+					message: "Email and code are required",
+				} satisfies VerifyOTPResponse,
+				{ status: 400 },
+			);
 		}
 
-		if (!/^\d{6}$/.test(request.code)) {
-			return {
-				success: false,
-				message: "Invalid verification code format",
-				error: "INVALID_CODE_FORMAT",
-			};
+		if (!validateEmail(email)) {
+			return Response.json(
+				{
+					success: false,
+					message: "Invalid email address",
+				} satisfies VerifyOTPResponse,
+				{ status: 400 },
+			);
+		}
+
+		if (!/^\d{6}$/.test(code)) {
+			return Response.json(
+				{
+					success: false,
+					message: "Invalid verification code format",
+				} satisfies VerifyOTPResponse,
+				{ status: 400 },
+			);
+		}
+
+		const clientIP = extractClientIP(request);
+
+		// Check failed attempts first
+		const failedAttemptResult = await trackFailedAttempt(
+			`verify-otp:${email}`,
+			OTP_CONFIG.MAX_FAILED_ATTEMPTS,
+			OTP_CONFIG.FAILED_ATTEMPTS_WINDOW_SECONDS,
+		);
+
+		if (failedAttemptResult.locked) {
+			console.warn(`Account locked due to too many failed attempts: ${email}`);
+			return Response.json(
+				{
+					success: false,
+					message:
+						"Account temporarily locked. Please request a new code.",
+					attemptsRemaining: 0,
+				} satisfies VerifyOTPResponse,
+				{ status: 429 },
+			);
 		}
 
 		const [emailRateLimit, ipRateLimit] = await Promise.all([
-			rateLimitByEmail(email, 10, "15 m"),
-			rateLimitByIP(request.clientIP, 50, "15 m"),
+			rateLimitByEmail(email, RATE_LIMITS.VERIFY_OTP_EMAIL.requests, RATE_LIMITS.VERIFY_OTP_EMAIL.window),
+			rateLimitByIP(clientIP, RATE_LIMITS.VERIFY_OTP_IP.requests, RATE_LIMITS.VERIFY_OTP_IP.window),
 		]);
 
 		if (!emailRateLimit.success) {
-			return {
-				success: false,
-				message: "Too many verification attempts. Please try again later.",
-				error: "RATE_LIMIT_EXCEEDED",
-				rateLimit: {
-					limit: emailRateLimit.limit,
-					remaining: emailRateLimit.remaining,
-					reset: emailRateLimit.reset,
+			console.warn(`Rate limit exceeded for verify-otp: email=${email}`);
+			return Response.json(
+				{
+					success: false,
+					message: "Too many verification attempts. Please try again later.",
+				} satisfies VerifyOTPResponse,
+				{
+					status: 429,
+					headers: {
+						"X-RateLimit-Limit": emailRateLimit.limit.toString(),
+						"X-RateLimit-Remaining": emailRateLimit.remaining.toString(),
+						"X-RateLimit-Reset": emailRateLimit.reset.toString(),
+					},
 				},
-			};
+			);
 		}
 
 		if (!ipRateLimit.success) {
-			return {
-				success: false,
-				message: "Too many attempts from this IP. Please try again later.",
-				error: "RATE_LIMIT_EXCEEDED",
-				rateLimit: {
-					limit: ipRateLimit.limit,
-					remaining: ipRateLimit.remaining,
-					reset: ipRateLimit.reset,
+			console.warn(`Rate limit exceeded for verify-otp: ip=${clientIP}`);
+			return Response.json(
+				{
+					success: false,
+					message: "Too many requests from your IP. Please try again later.",
+				} satisfies VerifyOTPResponse,
+				{
+					status: 429,
+					headers: {
+						"X-RateLimit-Limit": ipRateLimit.limit.toString(),
+						"X-RateLimit-Remaining": ipRateLimit.remaining.toString(),
+						"X-RateLimit-Reset": ipRateLimit.reset.toString(),
+					},
 				},
-			};
+			);
 		}
 
-		const userId = await validateOTP(email, request.code);
+		const userId = await validateOTP(email, code);
 
 		if (!userId) {
-			return {
-				success: false,
-				message: "Invalid or expired verification code",
-				error: "INVALID_CODE",
-			};
+			// Invalid OTP - don't reveal if user exists
+			console.warn(
+				`Invalid OTP for ${email}. Attempts: ${failedAttemptResult.attempts}/${OTP_CONFIG.MAX_FAILED_ATTEMPTS}`,
+			);
+			return Response.json(
+				{
+					success: false,
+					message: "Invalid or expired verification code",
+					attemptsRemaining: failedAttemptResult.remaining,
+				} satisfies VerifyOTPResponse,
+				{ status: 400 },
+			);
 		}
+
+		// Reset failed attempts on success
+		await resetFailedAttempts(`verify-otp:${email}`);
 
 		const user = await getUserById(userId);
 
 		if (!user) {
-			return {
-				success: false,
-				message: "User not found",
-				error: "USER_NOT_FOUND",
-			};
+			console.warn(`User not found after OTP validation: ${userId}`);
+			return Response.json(
+				{
+					success: false,
+					message: "User not found",
+				} satisfies VerifyOTPResponse,
+				{ status: 400 },
+			);
 		}
 
 		if (!user.emailVerified) {
@@ -102,24 +176,39 @@ export async function verifyOTPHandler(request: {
 		);
 		await storeRefreshToken(refreshToken, user.id, refreshTokenExpiry);
 
-		return {
-			success: true,
-			message: "Login successful",
-			user,
+		// Set secure cookies
+		const accessTokenCookie = serializeSecureCookie(
+			"access_token",
 			accessToken,
+			TOKEN_CONFIG.ACCESS_TOKEN_MAX_AGE,
+		);
+		const refreshTokenCookie = serializeSecureCookie(
+			"refresh_token",
 			refreshToken,
-			rateLimit: {
-				limit: emailRateLimit.limit,
-				remaining: emailRateLimit.remaining,
-				reset: emailRateLimit.reset,
+			TOKEN_CONFIG.REFRESH_TOKEN_MAX_AGE,
+		);
+
+		return Response.json(
+			{
+				success: true,
+				message: "Login successful",
+				user,
+			} satisfies VerifyOTPResponse,
+			{
+				status: 200,
+				headers: {
+					"Set-Cookie": [accessTokenCookie, refreshTokenCookie].join(", "),
+				},
 			},
-		};
+		);
 	} catch (error) {
 		console.error("Error verifying OTP:", error);
-		return {
-			success: false,
-			message: "Failed to verify code",
-			error: "INTERNAL_ERROR",
-		};
+		return Response.json(
+			{
+				success: false,
+				message: "Failed to verify code",
+			} satisfies VerifyOTPResponse,
+			{ status: 500 },
+		);
 	}
 }

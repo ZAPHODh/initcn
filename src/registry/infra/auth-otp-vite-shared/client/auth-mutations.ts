@@ -6,6 +6,11 @@ import {
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { authKeys } from "./query-keys";
+import {
+	authenticatedFetch,
+	clearCSRFTokens,
+	refreshCSRFToken,
+} from "./api-client";
 import type {
 	SendOTPRequest,
 	SendOTPResponse,
@@ -19,16 +24,22 @@ export function useSendOTP(
 ) {
 	return useMutation({
 		mutationFn: async (email: string): Promise<SendOTPResponse> => {
-			const response = await fetch("/api/auth/send-otp", {
+			const response = await authenticatedFetch("/api/auth/send-otp", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ email } satisfies SendOTPRequest),
-				credentials: "include",
 			});
 
 			const data: SendOTPResponse = await response.json();
 
 			if (!response.ok) {
+				// Handle CSRF token expiration
+				if (response.status === 403) {
+					clearCSRFTokens();
+					await refreshCSRFToken();
+					throw new Error("Security token expired. Please try again.");
+				}
+
 				if (response.status === 429) {
 					throw new Error(
 						data.message ||
@@ -61,16 +72,22 @@ export function useVerifyOTP(
 		mutationFn: async (
 			request: VerifyOTPRequest,
 		): Promise<VerifyOTPResponse> => {
-			const response = await fetch("/api/auth/verify-otp", {
+			const response = await authenticatedFetch("/api/auth/verify-otp", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(request),
-				credentials: "include",
 			});
 
 			const data: VerifyOTPResponse = await response.json();
 
 			if (!response.ok) {
+				// Handle CSRF token expiration
+				if (response.status === 403) {
+					clearCSRFTokens();
+					await refreshCSRFToken();
+					throw new Error("Security token expired. Please try again.");
+				}
+
 				if (response.status === 429) {
 					throw new Error(
 						data.message || "Too many attempts. Please try again later.",
@@ -130,6 +147,9 @@ export function useLogout(
 			toast.error(error.message || "Failed to logout");
 		},
 		onSuccess: () => {
+			// Clear CSRF tokens on logout
+			clearCSRFTokens();
+
 			queryClient.setQueryData(authKeys.currentUser(), null);
 			queryClient.clear();
 

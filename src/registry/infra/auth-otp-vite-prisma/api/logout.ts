@@ -1,24 +1,44 @@
-import { revokeRefreshToken, createTokenHash } from "@/lib/server/auth/session";
-import type { LogoutResponse } from "@/lib/types";
+import {
+	revokeRefreshToken,
+	createTokenHash,
+} from "@/lib/server/auth/session";
+import { serializeDeleteCookie } from "@/lib/server/auth/cookie-utils";
+import type { LogoutRequest, LogoutResponse } from "@/lib/types";
 
-export async function logoutHandler(request: {
-	refreshToken?: string;
-}): Promise<LogoutResponse> {
+export async function POST(request: Request): Promise<Response> {
 	try {
-		if (request.refreshToken) {
-			const tokenHash = createTokenHash(request.refreshToken);
+		const body = (await request.json()) as LogoutRequest;
+
+		if (body.refreshToken) {
+			const tokenHash = createTokenHash(body.refreshToken);
 			await revokeRefreshToken(tokenHash);
 		}
 
-		return {
-			success: true,
-			message: "Logged out successfully",
-		};
+		// Delete auth cookies
+		const deleteAccessToken = serializeDeleteCookie("access_token");
+		const deleteRefreshToken = serializeDeleteCookie("refresh_token");
+
+		return Response.json(
+			{
+				success: true,
+				message: "Logged out successfully",
+			} satisfies LogoutResponse,
+			{
+				status: 200,
+				headers: {
+					"Set-Cookie": [deleteAccessToken, deleteRefreshToken].join(", "),
+				},
+			},
+		);
 	} catch (error) {
 		console.error("Error during logout:", error);
-		return {
-			success: true,
-			message: "Logged out successfully",
-		};
+		// Still return success for logout to ensure client clears tokens
+		return Response.json(
+			{
+				success: true,
+				message: "Logged out successfully",
+			} satisfies LogoutResponse,
+			{ status: 200 },
+		);
 	}
 }

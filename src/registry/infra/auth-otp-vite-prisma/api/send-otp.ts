@@ -1,54 +1,82 @@
 import { findOrCreateUser } from "@/lib/server/auth/user";
 import { generateAndStoreOTP } from "@/lib/server/auth/verification";
 import { sendOTP } from "@/lib/server/auth/mail";
-import { rateLimitByEmail, rateLimitByIP } from "@/lib/server/auth/rate-limit";
-import { normalizeEmail, validateEmail } from "@/lib/server/utils";
+import {
+	rateLimitByEmail,
+	rateLimitByIP,
+} from "@/lib/server/auth/rate-limit";
+import { normalizeEmail, validateEmail, extractClientIP } from "@/lib/server/utils";
+import { validateCSRFFromRequest } from "@/lib/server/auth/csrf";
+import { RATE_LIMITS } from "@/lib/constants/auth";
 import type { SendOTPRequest, SendOTPResponse } from "@/lib/types";
 
-export async function sendOTPHandler(request: {
-	email: string;
-	clientIP: string;
-}): Promise<SendOTPResponse> {
+export async function POST(request: Request): Promise<Response> {
+	// CSRF validation (SEC-002 fix)
+	if (!validateCSRFFromRequest(request)) {
+		return Response.json(
+			{
+				success: false,
+				message: "Invalid CSRF token",
+			} satisfies SendOTPResponse,
+			{ status: 403 },
+		);
+	}
+
 	try {
-		const email = normalizeEmail(request.email);
+		const body = (await request.json()) as SendOTPRequest;
+		const email = normalizeEmail(body.email);
 
 		if (!email || !validateEmail(email)) {
-			return {
-				success: false,
-				message: "Invalid email address",
-				error: "INVALID_EMAIL",
-			};
+			return Response.json(
+				{
+					success: false,
+					message: "Invalid email address",
+				} satisfies SendOTPResponse,
+				{ status: 400 },
+			);
 		}
 
+		const clientIP = extractClientIP(request);
+
 		const [emailRateLimit, ipRateLimit] = await Promise.all([
-			rateLimitByEmail(email, 3, "15 m"),
-			rateLimitByIP(request.clientIP, 20, "15 m"),
+			rateLimitByEmail(email, RATE_LIMITS.SEND_OTP_EMAIL.requests, RATE_LIMITS.SEND_OTP_EMAIL.window),
+			rateLimitByIP(clientIP, RATE_LIMITS.SEND_OTP_IP.requests, RATE_LIMITS.SEND_OTP_IP.window),
 		]);
 
 		if (!emailRateLimit.success) {
-			return {
-				success: false,
-				message: "Too many requests. Please try again later.",
-				error: "RATE_LIMIT_EXCEEDED",
-				rateLimit: {
-					limit: emailRateLimit.limit,
-					remaining: emailRateLimit.remaining,
-					reset: emailRateLimit.reset,
+			console.warn(`Rate limit exceeded for send-otp: email=${email}`);
+			return Response.json(
+				{
+					success: false,
+					message: "Too many OTP requests. Please try again later.",
+				} satisfies SendOTPResponse,
+				{
+					status: 429,
+					headers: {
+						"X-RateLimit-Limit": emailRateLimit.limit.toString(),
+						"X-RateLimit-Remaining": emailRateLimit.remaining.toString(),
+						"X-RateLimit-Reset": emailRateLimit.reset.toString(),
+					},
 				},
-			};
+			);
 		}
 
 		if (!ipRateLimit.success) {
-			return {
-				success: false,
-				message: "Too many requests from this IP. Please try again later.",
-				error: "RATE_LIMIT_EXCEEDED",
-				rateLimit: {
-					limit: ipRateLimit.limit,
-					remaining: ipRateLimit.remaining,
-					reset: ipRateLimit.reset,
+			console.warn(`Rate limit exceeded for send-otp: ip=${clientIP}`);
+			return Response.json(
+				{
+					success: false,
+					message: "Too many requests from your IP. Please try again later.",
+				} satisfies SendOTPResponse,
+				{
+					status: 429,
+					headers: {
+						"X-RateLimit-Limit": ipRateLimit.limit.toString(),
+						"X-RateLimit-Remaining": ipRateLimit.remaining.toString(),
+						"X-RateLimit-Reset": ipRateLimit.reset.toString(),
+					},
 				},
-			};
+			);
 		}
 
 		const userPromise = findOrCreateUser(email, { emailVerified: false });
@@ -64,21 +92,21 @@ export async function sendOTPHandler(request: {
 			userName: user.name ?? undefined,
 		});
 
-		return {
-			success: true,
-			message: "Verification code sent to your email",
-			rateLimit: {
-				limit: emailRateLimit.limit,
-				remaining: emailRateLimit.remaining,
-				reset: emailRateLimit.reset,
-			},
-		};
+		return Response.json(
+			{
+				success: true,
+				message: "Verification code sent to your email",
+			} satisfies SendOTPResponse,
+			{ status: 200 },
+		);
 	} catch (error) {
 		console.error("Error sending OTP:", error);
-		return {
-			success: false,
-			message: "Failed to send verification code",
-			error: "INTERNAL_ERROR",
-		};
+		return Response.json(
+			{
+				success: false,
+				message: "Failed to send verification code",
+			} satisfies SendOTPResponse,
+			{ status: 500 },
+		);
 	}
 }
