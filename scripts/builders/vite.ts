@@ -7,6 +7,7 @@
  * - Different schema locations (prisma/ vs src/db/schema/)
  */
 
+import { relative } from "node:path";
 import { BaseInfraBuilder } from "./base-builder.js";
 import type { ConfigJson } from "./shared.js";
 
@@ -22,13 +23,16 @@ export class ViteBuilder extends BaseInfraBuilder {
 		"routes/*": "src/routes/*",
 
 		// Components
-		"components/*": "src/components/*.tsx",
+		"components/*": "src/components/*",
 
 		// Client utilities (React Query, hooks)
 		"client/*": "src/lib/client/*",
 
 		// Server utilities (JWT, validation, etc.)
 		"server/*": "src/lib/server/{feature}/*",
+
+		// Constants
+		"constants/*": "src/lib/constants/*",
 
 		// Emails
 		"emails/*": "src/emails/*",

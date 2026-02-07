@@ -99,15 +99,18 @@ export abstract class BaseInfraBuilder implements InfraBuilder {
 	 * Pattern matching with glob support
 	 */
 	private matchesPattern(path: string, pattern: string): boolean {
+		// Normalize path separators to forward slashes (Windows compatibility)
+		const normalizedPath = path.replace(/\\/g, "/");
+
 		// Exact match
-		if (path === pattern) {
+		if (normalizedPath === pattern) {
 			return true;
 		}
 
 		// Wildcard pattern (e.g., "api/*")
 		if (pattern.endsWith("/*")) {
 			const prefix = pattern.slice(0, -2);
-			return path.startsWith(prefix + "/");
+			return normalizedPath.startsWith(prefix + "/");
 		}
 
 		// Wildcard pattern for extensions (e.g., ".env.example.*")
@@ -115,7 +118,7 @@ export abstract class BaseInfraBuilder implements InfraBuilder {
 			const regexPattern = pattern
 				.replace(/\./g, "\\.")
 				.replace(/\*/g, ".*");
-			return new RegExp(`^${regexPattern}$`).test(path);
+			return new RegExp(`^${regexPattern}$`).test(normalizedPath);
 		}
 
 		// Catch-all pattern
@@ -135,6 +138,8 @@ export abstract class BaseInfraBuilder implements InfraBuilder {
 		target: string,
 		featureName: string,
 	): string {
+		// Normalize path separators to forward slashes (Windows compatibility)
+		const normalizedPath = sourcePath.replace(/\\/g, "/");
 		let result = target;
 
 		// Replace {feature} placeholder
@@ -143,7 +148,7 @@ export abstract class BaseInfraBuilder implements InfraBuilder {
 		// Handle glob patterns (e.g., "api/*" → "app/api/*")
 		if (pattern.endsWith("/*") && target.includes("*")) {
 			const prefix = pattern.slice(0, -2);
-			const suffix = sourcePath.slice(prefix.length + 1);
+			const suffix = normalizedPath.slice(prefix.length + 1);
 			result = result.replace("*", suffix);
 		}
 

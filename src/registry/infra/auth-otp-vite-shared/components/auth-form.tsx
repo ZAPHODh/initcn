@@ -5,7 +5,7 @@ import {
 	InputOTP,
 	InputOTPGroup,
 	InputOTPSlot,
-} from "@/registry/ui/input-otp";
+} from "@/components/ui/input-otp";
 import { useSendOTP, useVerifyOTP } from "@/lib/client/auth-mutations";
 import { EMAIL_REGEX } from "@/lib/server/utils";
 import { OTP_CONFIG } from "@/lib/constants/auth";

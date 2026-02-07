@@ -17,9 +17,7 @@ const REFRESH_TOKEN_EXPIRY = process.env.JWT_REFRESH_EXPIRY || "30d"; // 30 days
 /**
  * Parse duration string (e.g., "15m", "30d", "1h") to seconds
  */
-function parseTokenExpiry
-
-(duration: string): number {
+function parseTokenExpiry(duration: string): number {
 	const match = duration.match(/^(\d+)([smhd])$/);
 	if (!match) {
 		throw new Error(`Invalid token expiry format: ${duration}`);
