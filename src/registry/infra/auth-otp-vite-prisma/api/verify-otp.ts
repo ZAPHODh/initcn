@@ -1,5 +1,5 @@
-import { validateOTP } from "@/lib/server/auth/verification";
-import { getUserById, updateUser } from "@/lib/server/auth/user";
+import { prisma } from "@/lib/server/auth/db";
+import { getUserById } from "@/lib/server/auth/user";
 import { storeRefreshToken } from "@/lib/server/auth/session";
 import {
 	rateLimitByEmail,
@@ -7,29 +7,22 @@ import {
 	trackFailedAttempt,
 	resetFailedAttempts,
 } from "@/lib/server/auth/rate-limit";
-import { normalizeEmail, validateEmail, extractClientIP } from "@/lib/server/utils";
+import { normalizeEmail, extractClientIP } from "@/lib/server/utils";
 import {
 	generateAccessToken,
 	generateRefreshToken,
 	getTokenExpiry,
 } from "@/lib/server/jwt";
+import { isOTPExpired } from "@/lib/server/otp";
 import { serializeSecureCookie } from "@/lib/server/auth/cookie-utils";
-import { validateCSRFFromRequest } from "@/lib/server/auth/csrf";
-import { OTP_CONFIG, RATE_LIMITS, TOKEN_CONFIG } from "@/lib/constants/auth";
 import type { VerifyOTPRequest, VerifyOTPResponse } from "@/lib/types";
 
-export async function POST(request: Request): Promise<Response> {
-	// CSRF validation (SEC-002 fix)
-	if (!validateCSRFFromRequest(request)) {
-		return Response.json(
-			{
-				success: false,
-				message: "Invalid CSRF token",
-			} satisfies VerifyOTPResponse,
-			{ status: 403 },
-		);
-	}
+const MAX_FAILED_ATTEMPTS = 10;
+const FAILED_ATTEMPTS_WINDOW_SECONDS = 3600; // 1 hour
+const ACCESS_TOKEN_MAX_AGE = 15 * 60; // 15 minutes in seconds
+const REFRESH_TOKEN_MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
 
+export async function POST(request: Request): Promise<Response> {
 	try {
 		const body = (await request.json()) as VerifyOTPRequest;
 		const email = normalizeEmail(body.email);
@@ -45,33 +38,13 @@ export async function POST(request: Request): Promise<Response> {
 			);
 		}
 
-		if (!validateEmail(email)) {
-			return Response.json(
-				{
-					success: false,
-					message: "Invalid email address",
-				} satisfies VerifyOTPResponse,
-				{ status: 400 },
-			);
-		}
-
-		if (!/^\d{6}$/.test(code)) {
-			return Response.json(
-				{
-					success: false,
-					message: "Invalid verification code format",
-				} satisfies VerifyOTPResponse,
-				{ status: 400 },
-			);
-		}
-
 		const clientIP = extractClientIP(request);
 
 		// Check failed attempts first
 		const failedAttemptResult = await trackFailedAttempt(
 			`verify-otp:${email}`,
-			OTP_CONFIG.MAX_FAILED_ATTEMPTS,
-			OTP_CONFIG.FAILED_ATTEMPTS_WINDOW_SECONDS,
+			MAX_FAILED_ATTEMPTS,
+			FAILED_ATTEMPTS_WINDOW_SECONDS,
 		);
 
 		if (failedAttemptResult.locked) {
@@ -80,16 +53,19 @@ export async function POST(request: Request): Promise<Response> {
 				{
 					success: false,
 					message:
-						"Account temporarily locked. Please request a new code.",
+						"Account temporarily locked due to too many failed attempts. Try again later.",
 					attemptsRemaining: 0,
 				} satisfies VerifyOTPResponse,
 				{ status: 429 },
 			);
 		}
 
+		const EMAIL_RATE_LIMIT = { requests: 10, window: "15 m" as const };
+		const IP_RATE_LIMIT = { requests: 50, window: "15 m" as const };
+
 		const [emailRateLimit, ipRateLimit] = await Promise.all([
-			rateLimitByEmail(email, RATE_LIMITS.VERIFY_OTP_EMAIL.requests, RATE_LIMITS.VERIFY_OTP_EMAIL.window),
-			rateLimitByIP(clientIP, RATE_LIMITS.VERIFY_OTP_IP.requests, RATE_LIMITS.VERIFY_OTP_IP.window),
+			rateLimitByEmail(email, EMAIL_RATE_LIMIT.requests, EMAIL_RATE_LIMIT.window),
+			rateLimitByIP(clientIP, IP_RATE_LIMIT.requests, IP_RATE_LIMIT.window),
 		]);
 
 		if (!emailRateLimit.success) {
@@ -128,12 +104,15 @@ export async function POST(request: Request): Promise<Response> {
 			);
 		}
 
-		const userId = await validateOTP(email, code);
+		// Validate OTP (inline)
+		const verificationCode = await prisma.verificationCode.findFirst({
+			where: { email },
+			orderBy: { createdAt: "desc" },
+		});
 
-		if (!userId) {
-			// Invalid OTP - don't reveal if user exists
+		if (!verificationCode) {
 			console.warn(
-				`Invalid OTP for ${email}. Attempts: ${failedAttemptResult.attempts}/${OTP_CONFIG.MAX_FAILED_ATTEMPTS}`,
+				`Invalid OTP for ${email}. Attempts: ${failedAttemptResult.attempts}/${MAX_FAILED_ATTEMPTS}`,
 			);
 			return Response.json(
 				{
@@ -144,6 +123,37 @@ export async function POST(request: Request): Promise<Response> {
 				{ status: 400 },
 			);
 		}
+
+		if (isOTPExpired(verificationCode.expiresAt)) {
+			return Response.json(
+				{
+					success: false,
+					message: "Verification code has expired",
+				} satisfies VerifyOTPResponse,
+				{ status: 400 },
+			);
+		}
+
+		if (verificationCode.code !== code) {
+			console.warn(
+				`Invalid OTP for ${email}. Attempts: ${failedAttemptResult.attempts}/${MAX_FAILED_ATTEMPTS}`,
+			);
+			return Response.json(
+				{
+					success: false,
+					message: "Invalid verification code",
+					attemptsRemaining: failedAttemptResult.remaining,
+				} satisfies VerifyOTPResponse,
+				{ status: 400 },
+			);
+		}
+
+		const userId = verificationCode.userId;
+
+		// Delete verification code
+		await prisma.verificationCode.delete({
+			where: { id: verificationCode.id },
+		});
 
 		// Reset failed attempts on success
 		await resetFailedAttempts(`verify-otp:${email}`);
@@ -162,8 +172,10 @@ export async function POST(request: Request): Promise<Response> {
 		}
 
 		if (!user.emailVerified) {
-			await updateUser(userId, { emailVerified: true });
-			user.emailVerified = true;
+			await prisma.user.update({
+				where: { id: user.id },
+				data: { emailVerified: true },
+			});
 		}
 
 		const [accessToken, refreshToken] = await Promise.all([
@@ -180,12 +192,12 @@ export async function POST(request: Request): Promise<Response> {
 		const accessTokenCookie = serializeSecureCookie(
 			"access_token",
 			accessToken,
-			TOKEN_CONFIG.ACCESS_TOKEN_MAX_AGE,
+			ACCESS_TOKEN_MAX_AGE,
 		);
 		const refreshTokenCookie = serializeSecureCookie(
 			"refresh_token",
 			refreshToken,
-			TOKEN_CONFIG.REFRESH_TOKEN_MAX_AGE,
+			REFRESH_TOKEN_MAX_AGE,
 		);
 
 		return Response.json(

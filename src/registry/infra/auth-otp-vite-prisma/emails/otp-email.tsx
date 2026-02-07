@@ -61,7 +61,7 @@ export default function OTPEmail({
             </Section>
 
             <Text className="text-sm text-gray-600 mb-6">
-              This code will expire in 10 minutes. If you didn't request this
+              This code will expire in 3 minutes. If you didn't request this
               code, you can safely ignore this email.
             </Text>
 

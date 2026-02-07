@@ -1,27 +1,14 @@
-import { findOrCreateUser } from "@/lib/server/auth/user";
-import { generateAndStoreOTP } from "@/lib/server/auth/verification";
+import { prisma } from "@/lib/server/auth/db";
 import { sendOTP } from "@/lib/server/auth/mail";
 import {
 	rateLimitByEmail,
 	rateLimitByIP,
 } from "@/lib/server/auth/rate-limit";
 import { normalizeEmail, validateEmail, extractClientIP } from "@/lib/server/utils";
-import { validateCSRFFromRequest } from "@/lib/server/auth/csrf";
-import { RATE_LIMITS } from "@/lib/constants/auth";
+import { generateOTP, getOTPExpiry } from "@/lib/server/otp";
 import type { SendOTPRequest, SendOTPResponse } from "@/lib/types";
 
 export async function POST(request: Request): Promise<Response> {
-	// CSRF validation (SEC-002 fix)
-	if (!validateCSRFFromRequest(request)) {
-		return Response.json(
-			{
-				success: false,
-				message: "Invalid CSRF token",
-			} satisfies SendOTPResponse,
-			{ status: 403 },
-		);
-	}
-
 	try {
 		const body = (await request.json()) as SendOTPRequest;
 		const email = normalizeEmail(body.email);
@@ -38,9 +25,12 @@ export async function POST(request: Request): Promise<Response> {
 
 		const clientIP = extractClientIP(request);
 
+		const EMAIL_RATE_LIMIT = { requests: 3, window: "15 m" as const };
+		const IP_RATE_LIMIT = { requests: 20, window: "15 m" as const };
+
 		const [emailRateLimit, ipRateLimit] = await Promise.all([
-			rateLimitByEmail(email, RATE_LIMITS.SEND_OTP_EMAIL.requests, RATE_LIMITS.SEND_OTP_EMAIL.window),
-			rateLimitByIP(clientIP, RATE_LIMITS.SEND_OTP_IP.requests, RATE_LIMITS.SEND_OTP_IP.window),
+			rateLimitByEmail(email, EMAIL_RATE_LIMIT.requests, EMAIL_RATE_LIMIT.window),
+			rateLimitByIP(clientIP, IP_RATE_LIMIT.requests, IP_RATE_LIMIT.window),
 		]);
 
 		if (!emailRateLimit.success) {
@@ -79,12 +69,28 @@ export async function POST(request: Request): Promise<Response> {
 			);
 		}
 
-		const userPromise = findOrCreateUser(email, { emailVerified: false });
-		const otpPromise = userPromise.then((user) =>
-			generateAndStoreOTP(user.id, email),
-		);
+		let user = await prisma.user.findUnique({ where: { email } });
 
-		const [user, code] = await Promise.all([userPromise, otpPromise]);
+		if (!user) {
+			user = await prisma.user.create({
+				data: {
+					email,
+					emailVerified: false,
+				},
+			});
+		}
+
+		// Delete existing codes
+		await prisma.verificationCode.deleteMany({ where: { userId: user.id } });
+
+		// Generate OTP
+		const code = generateOTP(6);
+		const expiresAt = getOTPExpiry(3);
+
+		// Store OTP
+		await prisma.verificationCode.create({
+			data: { userId: user.id, email, code, expiresAt },
+		});
 
 		await sendOTP({
 			to: email,
@@ -95,7 +101,7 @@ export async function POST(request: Request): Promise<Response> {
 		return Response.json(
 			{
 				success: true,
-				message: "Verification code sent to your email",
+				message: "OTP sent successfully",
 			} satisfies SendOTPResponse,
 			{ status: 200 },
 		);
@@ -104,7 +110,7 @@ export async function POST(request: Request): Promise<Response> {
 		return Response.json(
 			{
 				success: false,
-				message: "Failed to send verification code",
+				message: "Failed to send OTP",
 			} satisfies SendOTPResponse,
 			{ status: 500 },
 		);

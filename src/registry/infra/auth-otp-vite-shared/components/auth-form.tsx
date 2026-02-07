@@ -1,17 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "@tanstack/react-form";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
 	InputOTP,
 	InputOTPGroup,
 	InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { useSendOTP, useVerifyOTP } from "@/lib/client/auth-mutations";
-import { EMAIL_REGEX } from "@/lib/server/utils";
-import { OTP_CONFIG } from "@/lib/constants/auth";
-
-const DEFAULT_LABELS = {};
-const DEFAULT_REDIRECT = "/dashboard";
 
 interface AuthFormProps {
 	redirectTo?: string;
@@ -35,98 +30,112 @@ interface AuthFormProps {
 		resending?: string;
 		emailRequired?: string;
 		emailInvalid?: string;
-		changeEmail?: string;
 	};
 }
 
 export function AuthForm({
-	redirectTo = DEFAULT_REDIRECT,
-	labels = DEFAULT_LABELS,
+	redirectTo = "/dashboard",
+	labels = {},
 }: AuthFormProps) {
+	const navigate = useNavigate();
 	const [currentStep, setCurrentStep] = useState<1 | 2>(1);
+	const [isLoading, setIsLoading] = useState(false);
+	const [isVerifying, setIsVerifying] = useState(false);
 	const [otp, setOTP] = useState("");
-	const [countdown, setCountdown] = useState(OTP_CONFIG.COUNTDOWN_SECONDS);
-
-	const sendOTP = useSendOTP({
-		onSuccess: () => {
-			setCurrentStep(2);
-			setCountdown(OTP_CONFIG.COUNTDOWN_SECONDS);
-		},
-	});
-
-	const verifyOTP = useVerifyOTP({
-		onSuccess: () => {
-			setCountdown(0);
-			form.reset();
-		},
-	});
-
-	// Focus OTP input when step changes to step 2
-	useEffect(() => {
-		if (currentStep === 2) {
-			const otpInput = document.querySelector('[id="otp"]') as HTMLElement;
-			otpInput?.focus();
-		}
-	}, [currentStep]);
+	const [countdown, setCountdown] = useState(30);
 
 	const form = useForm({
 		defaultValues: {
 			email: "",
 		},
 		onSubmit: async ({ value }) => {
-			await sendOTP.mutateAsync(value.email);
+			await onEmailSubmit(value);
 		},
 	});
 
 	useEffect(() => {
-		if (countdown <= 0) return;
+		let intervalId: NodeJS.Timeout | undefined;
 
-		const intervalId = setInterval(() => {
-			setCountdown((prev) => Math.max(0, prev - 1));
-		}, 1000);
+		if (countdown > 0) {
+			intervalId = setInterval(() => {
+				setCountdown((prev) => prev - 1);
+			}, 1000);
 
-		return () => clearInterval(intervalId);
+			return () => {
+				if (intervalId) {
+					clearInterval(intervalId);
+				}
+			};
+		}
 	}, [countdown]);
 
-	const emailPlaceholder = labels.emailPlaceholder ?? "you@example.com";
-	const emailRequired = labels.emailRequired ?? "Email is required";
-	const emailInvalid = labels.emailInvalid ?? "Invalid email address";
+	async function onEmailSubmit(data: { email: string }) {
+		setIsLoading(true);
 
-	const validateEmail = useCallback(
-		(value: string) => {
-			if (!value) return emailRequired;
-			if (!EMAIL_REGEX.test(value)) {
-				return emailInvalid;
+		try {
+			const res = await fetch("/api/auth/send-otp", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(data),
+			});
+
+			if (!res.ok) {
+				throw new Error(await res.text());
 			}
-			return undefined;
-		},
-		[emailRequired, emailInvalid],
-	);
+			setCurrentStep(2);
+			toast.success(labels.otpSent ?? "OTP sent", {
+				description: labels.otpSentDesc ?? "Check your email for the code",
+			});
+			setCountdown(30);
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: labels.otpFailed ?? "Failed to send OTP";
+			toast.error(labels.otpFailed ?? "Failed to send OTP", {
+				description: errorMessage,
+			});
+		} finally {
+			setIsLoading(false);
+		}
+	}
 
-	const handleOTPSubmit = useCallback(
-		async (e: React.FormEvent) => {
-			e.preventDefault();
-			e.stopPropagation();
+	async function onOTPSubmit(data: { email: string }) {
+		setIsVerifying(true);
 
-			const email = form.getFieldValue("email");
-			await verifyOTP.mutateAsync({ email, code: otp });
-		},
-		[form, otp, verifyOTP],
-	);
+		try {
+			const res = await fetch("/api/auth/verify-otp", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ email: data.email, code: otp }),
+			});
 
-	const handleResend = useCallback(async () => {
+			if (!res.ok) {
+				throw new Error(await res.text());
+			}
+			setCountdown(0);
+			form.reset();
+			toast.success(labels.verifiedSuccess ?? "Verification successful");
+
+			navigate(redirectTo);
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Something went wrong";
+			toast.error(labels.verifyFailed ?? "Verification failed", {
+				description: errorMessage,
+			});
+		} finally {
+			setIsVerifying(false);
+		}
+	}
+
+	async function handleResend() {
 		const email = form.getFieldValue("email");
 		if (!email) return;
-
 		setCountdown(0);
 		setOTP("");
-		await sendOTP.mutateAsync(email);
-	}, [form, sendOTP]);
-
-	const handleChangeEmail = useCallback(() => {
-		setCurrentStep(1);
-		setOTP("");
-	}, []);
+		await onEmailSubmit({ email });
+	}
 
 	if (currentStep === 1) {
 		return (
@@ -139,7 +148,18 @@ export function AuthForm({
 					}}
 				>
 					<div className="flex flex-col gap-2.5">
-						<form.Field name="email" validators={{ onChange: validateEmail }}>
+						<form.Field
+							name="email"
+							validators={{
+								onChange: ({ value }) => {
+									if (!value) return labels.emailRequired ?? "Email is required";
+									if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+										return labels.emailInvalid ?? "Invalid email address";
+									}
+									return undefined;
+								},
+							}}
+						>
 							{(field) => (
 								<div className="flex flex-col gap-2">
 									<label htmlFor={field.name} className="sr-only">
@@ -147,16 +167,16 @@ export function AuthForm({
 									</label>
 									<input
 										id={field.name}
-										placeholder={emailPlaceholder}
+										placeholder={labels.emailPlaceholder ?? "you@example.com"}
 										type="email"
-										disabled={sendOTP.isPending}
+										disabled={isLoading}
 										value={field.state.value}
 										onBlur={field.handleBlur}
 										onChange={(e) => field.handleChange(e.target.value)}
 										className="px-3 py-2 border rounded-md"
 									/>
 									{field.state.meta.errors?.[0] && (
-										<p className="text-xs text-red-600" role="alert" aria-live="polite">
+										<p className="text-xs text-red-600">
 											{field.state.meta.errors[0]}
 										</p>
 									)}
@@ -165,10 +185,10 @@ export function AuthForm({
 						</form.Field>
 						<button
 							type="submit"
-							disabled={sendOTP.isPending}
+							disabled={isLoading}
 							className="px-4 py-2 bg-black text-white rounded-md disabled:opacity-50"
 						>
-							{sendOTP.isPending
+							{isLoading
 								? labels.sending ?? "Sending..."
 								: labels.sendOtp ?? "Send OTP"}
 						</button>
@@ -188,7 +208,14 @@ export function AuthForm({
 				<br />
 				{labels.verifyDesc ?? "Enter the 6-digit code to continue"}
 			</p>
-			<form onSubmit={handleOTPSubmit} className="flex flex-col gap-2.5">
+			<form
+				onSubmit={(e) => {
+					e.preventDefault();
+					e.stopPropagation();
+					onOTPSubmit({ email: form.getFieldValue("email") });
+				}}
+				className="flex flex-col gap-2.5"
+			>
 				<div className="flex flex-col gap-2">
 					<label htmlFor="otp" className="sr-only">
 						{labels.enterOtp ?? "Enter OTP"}
@@ -197,10 +224,10 @@ export function AuthForm({
 						<InputOTP
 							id="otp"
 							autoFocus
-							disabled={verifyOTP.isPending}
+							disabled={isVerifying}
 							value={otp}
 							onChange={setOTP}
-							maxLength={OTP_CONFIG.LENGTH}
+							maxLength={6}
 						>
 							<InputOTPGroup className="flex gap-2">
 								<InputOTPSlot index={0} />
@@ -215,10 +242,10 @@ export function AuthForm({
 				</div>
 				<button
 					type="submit"
-					disabled={verifyOTP.isPending || otp.length !== OTP_CONFIG.LENGTH}
+					disabled={isVerifying || otp.length !== 6}
 					className="px-4 py-2 bg-black text-white rounded-md disabled:opacity-50"
 				>
-					{verifyOTP.isPending
+					{isVerifying
 						? labels.verifying ?? "Verifying..."
 						: labels.verifyOtp ?? "Verify OTP"}
 				</button>
@@ -226,17 +253,15 @@ export function AuthForm({
 			<div className="flex items-center justify-between text-sm text-gray-600">
 				<span>{labels.didNotReceive ?? "Didn't receive the code?"}</span>
 				{countdown > 0 ? (
-					<span aria-live="polite" aria-atomic="true">
-						{labels.resendIn?.(countdown) ?? `Resend in ${countdown}s`}
-					</span>
+					<span>{labels.resendIn?.(countdown) ?? `Resend in ${countdown}s`}</span>
 				) : (
 					<button
 						type="button"
 						onClick={handleResend}
-						disabled={sendOTP.isPending}
+						disabled={isLoading}
 						className="text-black font-medium hover:underline"
 					>
-						{sendOTP.isPending
+						{isLoading
 							? labels.resending ?? "Resending..."
 							: labels.resend ?? "Resend"}
 					</button>
@@ -244,10 +269,13 @@ export function AuthForm({
 			</div>
 			<button
 				type="button"
-				onClick={handleChangeEmail}
+				onClick={() => {
+					setCurrentStep(1);
+					setOTP("");
+				}}
 				className="text-sm text-gray-600 hover:underline"
 			>
-				{labels.changeEmail ?? "Change email"}
+				Change email
 			</button>
 		</div>
 	);
