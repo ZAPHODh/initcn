@@ -188,8 +188,19 @@ export const AuthForm = memo(function AuthForm({
 						</button>
 					</div>
 				</form>
+			<div className="flex items-center gap-2">
+				<hr className="flex-1" />
+				<span className="text-xs text-gray-500">or</span>
+				<hr className="flex-1" />
 			</div>
-		);
+			<a
+				href="/api/auth/google"
+				className="flex items-center justify-center gap-2 px-4 py-2 border rounded-md hover:bg-gray-50"
+			>
+				Continue with Google
+			</a>
+		</div>
+	);
 	}
 
 	// Step 2: OTP verification
