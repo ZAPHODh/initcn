@@ -9,16 +9,7 @@ interface ForFrameworkProps {
 	children: ReactNode;
 }
 
-/**
- * Wrap content for a specific framework variant.
- * Used as a child of <FrameworkContent>.
- *
- * @example
- * <FrameworkContent>
- *   <ForFramework value="nextjs">Next.js specific content</ForFramework>
- *   <ForFramework value={["vite", "tanstack-start"]}>Shared content</ForFramework>
- * </FrameworkContent>
- */
+
 export function ForFramework({ children }: ForFrameworkProps) {
 	return <>{children}</>;
 }
@@ -28,19 +19,6 @@ interface FrameworkContentProps {
 	fallback?: ReactNode;
 }
 
-/**
- * Renders only the child <ForFramework> block that matches the selected framework.
- *
- * @example
- * <FrameworkContent>
- *   <ForFramework value="nextjs">
- *     Next.js content here
- *   </ForFramework>
- *   <ForFramework value="vite">
- *     Vite content here
- *   </ForFramework>
- * </FrameworkContent>
- */
 export function FrameworkContent({ children, fallback }: FrameworkContentProps) {
 	const { config } = useConfig();
 

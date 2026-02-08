@@ -67,7 +67,7 @@ In development, emails are logged to console and rate limiting uses in-memory st
 | `BACKEND_URL` | Yes | API server origin, e.g. `http://localhost:3001` |
 | `GOOGLE_CLIENT_ID` | Optional | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | Optional | Google OAuth client secret |
-| `GOOGLE_REDIRECT_URI` | Optional | `http://localhost:3000/api/auth/oauth/google/callback` |
+| `GOOGLE_REDIRECT_URI` | Optional | `http://localhost:3000/api/auth/google/callback` |
 
 </ForFramework>
 
@@ -83,7 +83,7 @@ In development, emails are logged to console and rate limiting uses in-memory st
 | `BACKEND_URL` | Yes | API server origin, e.g. `http://localhost:3001` |
 | `GOOGLE_CLIENT_ID` | Optional | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | Optional | Google OAuth client secret |
-| `GOOGLE_REDIRECT_URI` | Optional | `http://localhost:3000/api/auth/oauth/google/callback` |
+| `GOOGLE_REDIRECT_URI` | Optional | `http://localhost:3000/api/auth/google/callback` |
 
 </ForFramework>
 
@@ -146,7 +146,7 @@ npx prisma db push
 
 <FrameworkContent>
 <ForFramework value="nextjs">`http://localhost:3000/api/auth/login/google/callback`</ForFramework>
-<ForFramework value={["vite", "tanstack-start"]}>`http://localhost:3000/api/auth/oauth/google/callback`</ForFramework>
+<ForFramework value={["vite", "tanstack-start"]}>`http://localhost:3000/api/auth/google/callback`</ForFramework>
 </FrameworkContent>
 
 5. Copy Client ID and Secret to `.env.local`
