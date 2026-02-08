@@ -1,44 +1,31 @@
-import { verifyAccessToken } from "@/lib/server/auth/session";
+import { validateSessionToken } from "@/lib/server/auth/session";
 import type { MeResponse } from "@/lib/types";
 
 function getTokenFromRequest(request: Request): string | null {
-	// Try Authorization header first
-	const authHeader = request.headers.get("authorization");
-	if (authHeader?.startsWith("Bearer ")) {
-		return authHeader.substring(7);
-	}
-
-	// Try cookie
-	const cookies = request.headers.get("cookie");
-	if (cookies) {
-		const match = cookies.match(/access_token=([^;]+)/);
-		if (match) {
-			return match[1];
-		}
-	}
-
-	return null;
+	const cookies = request.headers.get("cookie") || "";
+	const match = cookies.match(/session=([^;]+)/);
+	return match?.[1] ?? null;
 }
 
 export async function GET(request: Request): Promise<Response> {
 	try {
-		const accessToken = getTokenFromRequest(request);
+		const token = getTokenFromRequest(request);
 
-		if (!accessToken) {
+		if (!token) {
 			return Response.json(
 				{
-					error: "Access token not provided",
+					error: "Not authenticated",
 				} satisfies MeResponse,
 				{ status: 401 },
 			);
 		}
 
-		const user = await verifyAccessToken(accessToken);
+		const { user } = await validateSessionToken(token);
 
 		if (!user) {
 			return Response.json(
 				{
-					error: "Invalid or expired access token",
+					error: "Invalid or expired session",
 				} satisfies MeResponse,
 				{ status: 401 },
 			);

@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/server/auth/db";
 import { generateOTP, getOTPExpiry, isOTPExpired } from "@/lib/server/otp";
-import { hashOTP, verifyOTP } from "@/lib/server/auth/crypto";
 import type { VerificationCode } from "@/lib/types";
 
 export async function storeOTP(
@@ -13,14 +12,11 @@ export async function storeOTP(
 		where: { userId },
 	});
 
-	// Hash the OTP code before storage (SEC-001 fix)
-	const hashedCode = await hashOTP(code);
-
 	return await prisma.emailVerificationCode.create({
 		data: {
 			userId,
 			email,
-			code: hashedCode, // Store hashed code
+			code,
 			expiresAt,
 		},
 	});
@@ -35,14 +31,13 @@ export async function generateAndStoreOTP(
 
 	await storeOTP(userId, email, code, expiresAt);
 
-	return code; // Return plain text code for email sending
+	return code;
 }
 
 export async function validateOTP(
 	email: string,
 	code: string,
 ): Promise<string | null> {
-	// Query by email only (can't filter by hashed code)
 	const verification = await prisma.emailVerificationCode.findFirst({
 		where: { email },
 		orderBy: { createdAt: "desc" },
@@ -59,10 +54,7 @@ export async function validateOTP(
 		return null;
 	}
 
-	// Verify OTP using timing-safe comparison (SEC-012 fix)
-	const isValid = await verifyOTP(code, verification.code);
-
-	if (!isValid) {
+	if (verification.code !== code) {
 		return null;
 	}
 

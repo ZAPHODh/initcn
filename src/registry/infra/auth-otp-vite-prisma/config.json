@@ -2,7 +2,7 @@
 	"name": "otp-vite-prisma",
 	"type": "registry:lib",
 	"title": "Auth OTP (Vite + Prisma)",
-	"description": "OTP authentication with Vite, React Router, JWT tokens, and Prisma ORM",
+	"description": "OTP authentication with Vite, React Router, session cookies, and Prisma ORM",
 	"capabilities": {
 		"orm": ["prisma"],
 		"framework": ["vite"]
@@ -13,7 +13,6 @@
 		"@upstash/redis",
 		"arctic",
 		"zod",
-		"jose",
 		"@oslojs/crypto",
 		"@oslojs/encoding",
 		"@prisma/client"

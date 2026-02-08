@@ -1,22 +1,19 @@
-import {
-	revokeRefreshToken,
-	createTokenHash,
-} from "@/lib/server/auth/session";
-import { serializeDeleteCookie } from "@/lib/server/auth/cookie-utils";
-import type { LogoutRequest, LogoutResponse } from "@/lib/types";
+import { validateSessionToken, invalidateSession } from "@/lib/server/auth/session";
+import { serializeDeleteSessionCookie } from "@/lib/server/auth/cookie-utils";
+import type { LogoutResponse } from "@/lib/types";
 
 export async function POST(request: Request): Promise<Response> {
 	try {
-		const body = (await request.json()) as LogoutRequest;
+		const cookieHeader = request.headers.get("cookie") || "";
+		const match = cookieHeader.match(/session=([^;]+)/);
+		const token = match?.[1];
 
-		if (body.refreshToken) {
-			const tokenHash = createTokenHash(body.refreshToken);
-			await revokeRefreshToken(tokenHash);
+		if (token) {
+			const { session } = await validateSessionToken(token);
+			if (session) {
+				await invalidateSession(session.id);
+			}
 		}
-
-		// Delete auth cookies
-		const deleteAccessToken = serializeDeleteCookie("access_token");
-		const deleteRefreshToken = serializeDeleteCookie("refresh_token");
 
 		return Response.json(
 			{
@@ -26,7 +23,7 @@ export async function POST(request: Request): Promise<Response> {
 			{
 				status: 200,
 				headers: {
-					"Set-Cookie": [deleteAccessToken, deleteRefreshToken].join(", "),
+					"Set-Cookie": serializeDeleteSessionCookie(),
 				},
 			},
 		);

@@ -12,11 +12,6 @@ import type {
   VerifyOTPRequest,
   VerifyOTPResponse,
 } from "@/lib/server/auth/types";
-import {
-  authenticatedFetch,
-  clearCSRFTokens,
-  refreshCSRFToken,
-} from "./api-client";
 import { authKeys } from "./query-keys";
 
 export function useSendOTP(
@@ -24,8 +19,9 @@ export function useSendOTP(
 ) {
   return useMutation({
     mutationFn: async (email: string): Promise<SendOTPResponse> => {
-      const response = await authenticatedFetch("/api/auth/send-otp", {
+      const response = await fetch("/api/auth/send-otp", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email } satisfies SendOTPRequest),
       });
@@ -33,13 +29,6 @@ export function useSendOTP(
       const data: SendOTPResponse = await response.json();
 
       if (!response.ok) {
-        // Handle CSRF token expiration
-        if (response.status === 403) {
-          clearCSRFTokens();
-          await refreshCSRFToken();
-          throw new Error("Security token expired. Please try again.");
-        }
-
         if (response.status === 429) {
           throw new Error(
             data.message || "Too many requests. Please try again later.",
@@ -71,8 +60,9 @@ export function useVerifyOTP(
     mutationFn: async (
       request: VerifyOTPRequest,
     ): Promise<VerifyOTPResponse> => {
-      const response = await authenticatedFetch("/api/auth/verify-otp", {
+      const response = await fetch("/api/auth/verify-otp", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(request),
       });
@@ -80,13 +70,6 @@ export function useVerifyOTP(
       const data: VerifyOTPResponse = await response.json();
 
       if (!response.ok) {
-        // Handle CSRF token expiration
-        if (response.status === 403) {
-          clearCSRFTokens();
-          await refreshCSRFToken();
-          throw new Error("Security token expired. Please try again.");
-        }
-
         if (response.status === 429) {
           throw new Error(
             data.message || "Too many attempts. Please try again later.",
@@ -104,10 +87,6 @@ export function useVerifyOTP(
       toast.error(error.message || "Failed to verify code");
     },
     onSuccess: (data) => {
-      if (data.user) {
-        queryClient.setQueryData(authKeys.currentUser(), data.user);
-      }
-
       queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
 
       toast.success(data.message || "Login successful");
@@ -146,9 +125,6 @@ export function useLogout(
       toast.error(error.message || "Failed to logout");
     },
     onSuccess: () => {
-      // Clear CSRF tokens on logout
-      clearCSRFTokens();
-
       queryClient.setQueryData(authKeys.currentUser(), null);
       queryClient.clear();
 
@@ -156,25 +132,6 @@ export function useLogout(
 
       navigate("/login");
     },
-    ...options,
-  });
-}
-
-export function useRefreshToken(
-  options?: UseMutationOptions<void, Error, void>,
-) {
-  return useMutation({
-    mutationFn: async (): Promise<void> => {
-      const response = await fetch("/api/auth/refresh", {
-        method: "POST",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to refresh token");
-      }
-    },
-    retry: false,
     ...options,
   });
 }

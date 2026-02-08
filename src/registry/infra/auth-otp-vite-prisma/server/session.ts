@@ -1,111 +1,89 @@
 import { sha256 } from "@oslojs/crypto/sha2";
-import { encodeHexLowerCase } from "@oslojs/encoding";
+import {
+	encodeBase32LowerCaseNoPadding,
+	encodeHexLowerCase,
+} from "@oslojs/encoding";
 import { prisma } from "@/lib/server/auth/db";
-import { verifyToken, generateRefreshToken } from "@/lib/server/jwt";
-import type { User } from "@/lib/types";
+import type { SessionValidationResult } from "@/lib/server/auth/types";
 
-export async function verifyAccessToken(token: string): Promise<User | null> {
-	const payload = await verifyToken(token);
+export const SESSION_EXPIRY_DAYS = 30;
+export const SESSION_RENEWAL_THRESHOLD_DAYS = 15;
+export const SESSION_COOKIE_NAME = "session";
 
-	if (!payload || payload.type !== "access") {
-		return null;
-	}
-
-	const user = await prisma.user.findUnique({
-		where: { id: payload.sub },
-	});
-
-	return user;
+export function generateSessionToken(): string {
+	const bytes = new Uint8Array(20);
+	crypto.getRandomValues(bytes);
+	return encodeBase32LowerCaseNoPadding(bytes);
 }
 
-export async function verifyRefreshToken(token: string): Promise<string | null> {
-	const payload = await verifyToken(token);
-
-	if (!payload || payload.type !== "refresh") {
-		return null;
-	}
-
-	const tokenHash = createTokenHash(token);
-
-	const dbToken = await prisma.refreshToken.findUnique({
-		where: { tokenHash },
-	});
-
-	if (!dbToken || dbToken.revoked) {
-		return null;
-	}
-
-	if (Date.now() >= dbToken.expiresAt.getTime()) {
-		await prisma.refreshToken.delete({ where: { tokenHash } });
-		return null;
-	}
-
-	return payload.sub;
-}
-
-export function createTokenHash(token: string): string {
+export function createSessionId(token: string): string {
 	return encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
 }
 
-export async function storeRefreshToken(
-	token: string,
-	userId: string,
+export function getSessionExpiry(days: number = SESSION_EXPIRY_DAYS): Date {
+	return new Date(Date.now() + 1000 * 60 * 60 * 24 * days);
+}
+
+export function isSessionExpiringSoon(
 	expiresAt: Date,
-): Promise<void> {
-	const tokenHash = createTokenHash(token);
+	thresholdDays: number = SESSION_RENEWAL_THRESHOLD_DAYS,
+): boolean {
+	const thresholdMs = 1000 * 60 * 60 * 24 * thresholdDays;
+	return Date.now() >= expiresAt.getTime() - thresholdMs;
+}
 
-	await prisma.refreshToken.create({
-		data: {
-			userId,
-			tokenHash,
-			expiresAt,
-		},
+export function isSessionExpired(expiresAt: Date): boolean {
+	return Date.now() >= expiresAt.getTime();
+}
+
+export async function createSession(token: string, userId: string) {
+	const sessionId = createSessionId(token);
+	const session = {
+		id: sessionId,
+		userId,
+		expiresAt: getSessionExpiry(SESSION_EXPIRY_DAYS),
+	};
+	await prisma.session.create({ data: session });
+	return session;
+}
+
+export async function validateSessionToken(
+	token: string,
+): Promise<SessionValidationResult> {
+	const sessionId = createSessionId(token);
+
+	const result = await prisma.session.findUnique({
+		where: { id: sessionId },
+		include: { user: true },
 	});
+
+	if (!result) {
+		return { session: null, user: null };
+	}
+
+	const { user, ...session } = result;
+
+	if (isSessionExpired(session.expiresAt)) {
+		await prisma.session.delete({ where: { id: sessionId } });
+		return { session: null, user: null };
+	}
+
+	if (isSessionExpiringSoon(session.expiresAt, SESSION_RENEWAL_THRESHOLD_DAYS)) {
+		const newExpiresAt = getSessionExpiry(SESSION_EXPIRY_DAYS);
+		await prisma.session.update({
+			where: { id: sessionId },
+			data: { expiresAt: newExpiresAt },
+		});
+		session.expiresAt = newExpiresAt;
+	}
+
+	return { session, user };
 }
 
-export async function revokeRefreshToken(tokenHash: string): Promise<void> {
-	await prisma.refreshToken.updateMany({
-		where: { tokenHash },
-		data: { revoked: true },
-	});
+export async function invalidateSession(sessionId: string): Promise<void> {
+	await prisma.session.delete({ where: { id: sessionId } });
 }
 
-export async function revokeAllUserTokens(userId: string): Promise<void> {
-	await prisma.refreshToken.updateMany({
-		where: { userId },
-		data: { revoked: true },
-	});
-}
-
-export async function cleanupExpiredTokens(): Promise<void> {
-	await prisma.refreshToken.deleteMany({
-		where: {
-			expiresAt: {
-				lt: new Date(),
-			},
-		},
-	});
-}
-
-export async function getUserRefreshTokens(userId: string) {
-	return await prisma.refreshToken.findMany({
-		where: {
-			userId,
-			revoked: false,
-			expiresAt: {
-				gte: new Date(),
-			},
-		},
-		orderBy: {
-			createdAt: "desc",
-		},
-	});
-}
-
-export function extractAccessTokenFromCookies(cookies: Record<string, string>): string | null {
-	return cookies.access_token || null;
-}
-
-export function extractRefreshTokenFromCookies(cookies: Record<string, string>): string | null {
-	return cookies.refresh_token || null;
+export async function invalidateAllUserSessions(userId: string): Promise<void> {
+	await prisma.session.deleteMany({ where: { userId } });
 }

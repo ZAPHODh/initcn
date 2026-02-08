@@ -59,7 +59,7 @@ export function LoginDialog({
 							resending: "Resending...",
 							emailRequired: "Email is required",
 							emailInvalid: "Invalid email address",
-							changeEmail: "Change email",
+							
 						}}
 					/>
 				</Suspense>

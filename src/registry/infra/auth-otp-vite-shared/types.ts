@@ -1,4 +1,4 @@
-
+// Core domain types - database-agnostic
 export interface User {
 	id: string;
 	email: string;
@@ -9,23 +9,14 @@ export interface User {
 	updatedAt: Date;
 }
 
-
-export interface JWTPayload {
-	sub: string; 
-	email: string;
-	exp: number;
-	iat: number;
-	type: "access" | "refresh";
-}
-
-
-export interface RefreshToken {
+export interface Session {
 	id: string;
 	userId: string;
-	tokenHash: string; 
 	expiresAt: Date;
-	revoked: boolean;
-	createdAt: Date;
+}
+
+export interface SessionWithUser extends Session {
+	user: User;
 }
 
 export interface VerificationCode {
@@ -37,11 +28,12 @@ export interface VerificationCode {
 	createdAt: Date;
 }
 
-
-export interface AuthValidationResult {
+export interface SessionValidationResult {
+	session: Session | null;
 	user: User | null;
 }
 
+// Request/Response types for API routes
 export interface SendOTPRequest {
 	email: string;
 }
@@ -50,11 +42,6 @@ export interface SendOTPResponse {
 	success: boolean;
 	message: string;
 	error?: string;
-	rateLimit?: {
-		limit: number;
-		remaining: number;
-		reset: number;
-	};
 }
 
 export interface VerifyOTPRequest {
@@ -63,18 +50,6 @@ export interface VerifyOTPRequest {
 }
 
 export interface VerifyOTPResponse {
-	success: boolean;
-	message: string;
-	user?: User;
-	error?: string;
-	rateLimit?: {
-		limit: number;
-		remaining: number;
-		reset: number;
-	};
-}
-
-export interface RefreshTokenResponse {
 	success: boolean;
 	message: string;
 	error?: string;

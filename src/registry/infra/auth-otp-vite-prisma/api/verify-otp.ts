@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/server/auth/db";
-import { getUserById } from "@/lib/server/auth/user";
-import { storeRefreshToken } from "@/lib/server/auth/session";
+import {
+	generateSessionToken,
+	createSession,
+	getSessionExpiry,
+} from "@/lib/server/auth/session";
 import {
 	rateLimitByEmail,
 	rateLimitByIP,
@@ -8,19 +11,14 @@ import {
 	resetFailedAttempts,
 } from "@/lib/server/auth/rate-limit";
 import { normalizeEmail, extractClientIP } from "@/lib/server/utils";
-import {
-	generateAccessToken,
-	generateRefreshToken,
-	getTokenExpiry,
-} from "@/lib/server/jwt";
 import { isOTPExpired } from "@/lib/server/otp";
-import { serializeSecureCookie } from "@/lib/server/auth/cookie-utils";
+import { serializeSessionCookie } from "@/lib/server/auth/cookie-utils";
 import type { VerifyOTPRequest, VerifyOTPResponse } from "@/lib/types";
 
 const MAX_FAILED_ATTEMPTS = 10;
 const FAILED_ATTEMPTS_WINDOW_SECONDS = 3600; // 1 hour
-const ACCESS_TOKEN_MAX_AGE = 15 * 60; // 15 minutes in seconds
-const REFRESH_TOKEN_MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
+const EMAIL_RATE_LIMIT = { requests: 10, window: "15 m" as const };
+const IP_RATE_LIMIT = { requests: 50, window: "15 m" as const };
 
 export async function POST(request: Request): Promise<Response> {
 	try {
@@ -59,9 +57,6 @@ export async function POST(request: Request): Promise<Response> {
 				{ status: 429 },
 			);
 		}
-
-		const EMAIL_RATE_LIMIT = { requests: 10, window: "15 m" as const };
-		const IP_RATE_LIMIT = { requests: 50, window: "15 m" as const };
 
 		const [emailRateLimit, ipRateLimit] = await Promise.all([
 			rateLimitByEmail(email, EMAIL_RATE_LIMIT.requests, EMAIL_RATE_LIMIT.window),
@@ -104,31 +99,34 @@ export async function POST(request: Request): Promise<Response> {
 			);
 		}
 
-		// Validate OTP (inline)
-		const verificationCode = await prisma.verificationCode.findFirst({
+		const user = await prisma.user.findUnique({
 			where: { email },
-			orderBy: { createdAt: "desc" },
 		});
 
-		if (!verificationCode) {
-			console.warn(
-				`Invalid OTP for ${email}. Attempts: ${failedAttemptResult.attempts}/${MAX_FAILED_ATTEMPTS}`,
-			);
+		if (!user) {
+			console.warn(`Verification attempt for non-existent user: ${email}`);
 			return Response.json(
 				{
 					success: false,
-					message: "Invalid or expired verification code",
+					message: "Invalid credentials",
 					attemptsRemaining: failedAttemptResult.remaining,
 				} satisfies VerifyOTPResponse,
 				{ status: 400 },
 			);
 		}
 
-		if (isOTPExpired(verificationCode.expiresAt)) {
+		const verificationCode = await prisma.verificationCode.findFirst({
+			where: { userId: user.id },
+			orderBy: { expiresAt: "desc" },
+		});
+
+		if (!verificationCode) {
+			console.warn(`No verification code found for user: ${email}`);
 			return Response.json(
 				{
 					success: false,
-					message: "Verification code has expired",
+					message: "Invalid or expired OTP",
+					attemptsRemaining: failedAttemptResult.remaining,
 				} satisfies VerifyOTPResponse,
 				{ status: 400 },
 			);
@@ -141,35 +139,38 @@ export async function POST(request: Request): Promise<Response> {
 			return Response.json(
 				{
 					success: false,
-					message: "Invalid verification code",
+					message: "Invalid OTP",
 					attemptsRemaining: failedAttemptResult.remaining,
 				} satisfies VerifyOTPResponse,
 				{ status: 400 },
 			);
 		}
 
-		const userId = verificationCode.userId;
-
-		// Delete verification code
-		await prisma.verificationCode.delete({
-			where: { id: verificationCode.id },
-		});
-
-		// Reset failed attempts on success
-		await resetFailedAttempts(`verify-otp:${email}`);
-
-		const user = await getUserById(userId);
-
-		if (!user) {
-			console.warn(`User not found after OTP validation: ${userId}`);
+		if (isOTPExpired(verificationCode.expiresAt)) {
+			console.warn(`Expired OTP for ${email}`);
+			await prisma.verificationCode.delete({
+				where: { id: verificationCode.id },
+			});
 			return Response.json(
 				{
 					success: false,
-					message: "User not found",
+					message: "OTP has expired. Please request a new one.",
+					attemptsRemaining: failedAttemptResult.remaining,
 				} satisfies VerifyOTPResponse,
 				{ status: 400 },
 			);
 		}
+
+		await resetFailedAttempts(`verify-otp:${email}`);
+
+		await prisma.verificationCode.delete({
+			where: { id: verificationCode.id },
+		});
+
+		// Invalidate all existing sessions for this user
+		await prisma.session.deleteMany({
+			where: { userId: user.id },
+		});
 
 		if (!user.emailVerified) {
 			await prisma.user.update({
@@ -178,38 +179,20 @@ export async function POST(request: Request): Promise<Response> {
 			});
 		}
 
-		const [accessToken, refreshToken] = await Promise.all([
-			generateAccessToken(user.id, user.email),
-			generateRefreshToken(user.id),
-		]);
-
-		const refreshTokenExpiry = getTokenExpiry(
-			process.env.JWT_REFRESH_EXPIRY || "30d",
-		);
-		await storeRefreshToken(refreshToken, user.id, refreshTokenExpiry);
-
-		// Set secure cookies
-		const accessTokenCookie = serializeSecureCookie(
-			"access_token",
-			accessToken,
-			ACCESS_TOKEN_MAX_AGE,
-		);
-		const refreshTokenCookie = serializeSecureCookie(
-			"refresh_token",
-			refreshToken,
-			REFRESH_TOKEN_MAX_AGE,
-		);
+		const sessionToken = generateSessionToken();
+		await createSession(sessionToken, user.id);
+		const sessionExpiry = getSessionExpiry();
+		const sessionCookie = serializeSessionCookie(sessionToken, sessionExpiry);
 
 		return Response.json(
 			{
 				success: true,
 				message: "Login successful",
-				user,
 			} satisfies VerifyOTPResponse,
 			{
 				status: 200,
 				headers: {
-					"Set-Cookie": [accessTokenCookie, refreshTokenCookie].join(", "),
+					"Set-Cookie": sessionCookie,
 				},
 			},
 		);

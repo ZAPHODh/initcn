@@ -2,7 +2,7 @@
 	"name": "otp-vite-shared",
 	"type": "registry:lib",
 	"title": "Auth OTP Vite (Shared)",
-	"description": "Shared Vite code for OTP authentication with React Router and JWT tokens",
+	"description": "Shared Vite code for OTP authentication with React Router and session cookies",
 	"capabilities": {
 		"orm": ["*"],
 		"framework": ["vite"]
@@ -11,10 +11,10 @@
 		"@oslojs/crypto",
 		"@oslojs/encoding",
 		"sonner",
-		"jose",
 		"@tanstack/react-form",
 		"@tanstack/react-query",
-		"react-router-dom"
+		"react-router-dom",
+		"@react-email/components"
 	],
 	"devDependencies": ["@types/node"],
 	"registryDependencies": ["input-otp", "dialog"]
