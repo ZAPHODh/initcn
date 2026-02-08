@@ -67,6 +67,8 @@ function isForFrameworkElement(
 		typeof child === "object" &&
 		child !== null &&
 		"props" in child &&
-		"value" in (child as React.ReactElement).props
+		typeof (child as { props: unknown }).props === "object" &&
+		(child as { props: unknown }).props !== null &&
+		"value" in (child as { props: Record<string, unknown> }).props
 	);
 }
