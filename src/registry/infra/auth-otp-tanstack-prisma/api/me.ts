@@ -1,44 +1,36 @@
-import { verifyAccessToken } from "@/lib/server/auth/session";
+import { validateSessionToken } from "@/lib/server/auth/session";
 import type { MeResponse } from "@/lib/server/auth/types";
 
 /**
  * Get current user handler (framework-agnostic)
  *
- * This function validates the access token and returns the current user
- * The backend framework must read the access token from cookies
+ * This function validates the session token and returns the current user
+ * The backend framework must read the session token from cookies
  *
  * @example
  * ```typescript
- * // Hono
- * import { getCookie } from 'hono/cookie';
+ * // TanStack Start route
+ * export async function GET({ request }: APIEvent) {
+ *   const sessionToken = getCookieValue(request, "session");
  *
- * app.get('/api/auth/me', async (c) => {
- *   const accessToken = getCookie(c, 'access_token');
- *
- *   if (!accessToken) {
- *     return c.json({ error: 'Not authenticated' }, 401);
+ *   if (!sessionToken) {
+ *     return json({ error: "Not authenticated" }, { status: 401 });
  *   }
  *
- *   const result = await meHandler({ accessToken });
- *
- *   if (!result.user) {
- *     return c.json({ error: result.error || 'Not authenticated' }, 401);
- *   }
- *
- *   return c.json({ user: result.user });
- * });
+ *   const result = await meHandler({ sessionToken });
+ *   return json(result, { status: result.user ? 200 : 401 });
+ * }
  * ```
  */
 export async function meHandler(request: {
-	accessToken: string;
+	sessionToken: string;
 }): Promise<MeResponse> {
 	try {
-		// Validate access token and get user
-		const user = await verifyAccessToken(request.accessToken);
+		const { user } = await validateSessionToken(request.sessionToken);
 
 		if (!user) {
 			return {
-				error: "Invalid or expired access token",
+				error: "Invalid or expired session",
 			};
 		}
 

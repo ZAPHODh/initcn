@@ -1,40 +1,37 @@
-import { revokeRefreshToken, createTokenHash } from "@/lib/server/auth/session";
+import {
+	validateSessionToken,
+	invalidateSession,
+} from "@/lib/server/auth/session";
 import type { LogoutResponse } from "@/lib/server/auth/types";
 
 /**
  * Logout handler (framework-agnostic)
  *
- * This function revokes the refresh token
- * The backend framework must clear the cookies
+ * This function invalidates the session
+ * The backend framework must clear the session cookie
  *
  * @example
  * ```typescript
- * // Hono
- * import { getCookie, deleteCookie } from 'hono/cookie';
+ * // TanStack Start route
+ * case "logout": {
+ *   const sessionToken = getCookieValue(request, "session");
+ *   const result = await logoutHandler({ sessionToken: sessionToken || "" });
  *
- * app.post('/api/auth/logout', async (c) => {
- *   const refreshToken = getCookie(c, 'refresh_token');
- *
- *   if (refreshToken) {
- *     await logoutHandler({ refreshToken });
- *   }
- *
- *   // Clear cookies
- *   deleteCookie(c, 'access_token');
- *   deleteCookie(c, 'refresh_token');
- *
- *   return c.json({ success: true, message: 'Logged out successfully' });
- * });
+ *   const headers = new Headers();
+ *   headers.set("Set-Cookie", "session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0");
+ *   return json(result, { status: 200, headers });
+ * }
  * ```
  */
 export async function logoutHandler(request: {
-	refreshToken?: string;
+	sessionToken?: string;
 }): Promise<LogoutResponse> {
 	try {
-		// If refresh token exists, revoke it
-		if (request.refreshToken) {
-			const tokenHash = createTokenHash(request.refreshToken);
-			await revokeRefreshToken(tokenHash);
+		if (request.sessionToken) {
+			const { session } = await validateSessionToken(request.sessionToken);
+			if (session) {
+				await invalidateSession(session.id);
+			}
 		}
 
 		return {
@@ -43,7 +40,7 @@ export async function logoutHandler(request: {
 		};
 	} catch (error) {
 		console.error("Error during logout:", error);
-		// Always return success for logout (even if revocation fails)
+		// Always return success for logout (even if invalidation fails)
 		return {
 			success: true,
 			message: "Logged out successfully",

@@ -9,23 +9,20 @@ export interface User {
 	updatedAt: Date;
 }
 
-// JWT payload interface (follows standard JWT claims)
-export interface JWTPayload {
-	sub: string; // userId (standard JWT claim)
-	email: string;
-	exp: number; // Expiration timestamp (Unix timestamp)
-	iat: number; // Issued at timestamp (Unix timestamp)
-	type: "access" | "refresh";
-}
-
-// Refresh token database model (for revocation tracking)
-export interface RefreshToken {
+export interface Session {
 	id: string;
 	userId: string;
-	tokenHash: string; // SHA256 hash of the refresh token
 	expiresAt: Date;
-	revoked: boolean;
-	createdAt: Date;
+}
+
+export interface SessionWithUser {
+	session: Session;
+	user: User;
+}
+
+export interface SessionValidationResult {
+	session: Session | null;
+	user: User | null;
 }
 
 export interface VerificationCode {
@@ -35,11 +32,6 @@ export interface VerificationCode {
 	code: string;
 	expiresAt: Date;
 	createdAt: Date;
-}
-
-// Auth validation result (for TanStack Query)
-export interface AuthValidationResult {
-	user: User | null;
 }
 
 // Request/Response types for API routes
@@ -66,19 +58,12 @@ export interface VerifyOTPRequest {
 export interface VerifyOTPResponse {
 	success: boolean;
 	message: string;
-	user?: User;
 	error?: string;
 	rateLimit?: {
 		limit: number;
 		remaining: number;
 		reset: number;
 	};
-}
-
-export interface RefreshTokenResponse {
-	success: boolean;
-	message: string;
-	error?: string;
 }
 
 export interface LogoutResponse {

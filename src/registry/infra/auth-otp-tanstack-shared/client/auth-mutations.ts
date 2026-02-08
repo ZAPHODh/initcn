@@ -50,7 +50,6 @@ export function useSendOTP(
 			const data: SendOTPResponse = await response.json();
 
 			if (!response.ok) {
-				// Handle rate limiting
 				if (response.status === 429) {
 					throw new Error(
 						data.message ||
@@ -108,13 +107,12 @@ export function useVerifyOTP(
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(request),
-				credentials: "include", // Backend will set httpOnly cookies
+				credentials: "include", // Backend sets httpOnly session cookie
 			});
 
 			const data: VerifyOTPResponse = await response.json();
 
 			if (!response.ok) {
-				// Handle rate limiting
 				if (response.status === 429) {
 					throw new Error(
 						data.message || "Too many attempts. Please try again later.",
@@ -131,16 +129,11 @@ export function useVerifyOTP(
 		onError: (error) => {
 			toast.error(error.message || "Failed to verify code");
 		},
-		onSuccess: (data) => {
-			// Update the current user in the cache with the returned user data
-			if (data.user) {
-				queryClient.setQueryData(authKeys.currentUser(), data.user);
-			}
-
-			// Alternatively, invalidate to refetch from server
+		onSuccess: () => {
+			// Invalidate to refetch current user from server
 			queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
 
-			toast.success(data.message || "Login successful");
+			toast.success("Login successful");
 
 			// Navigate to dashboard or redirect URL
 			const redirect = new URLSearchParams(window.location.search).get(
@@ -193,55 +186,13 @@ export function useLogout(
 			toast.error(error.message || "Failed to logout");
 		},
 		onSuccess: () => {
-			// Clear the current user from cache
-			queryClient.setQueryData(authKeys.currentUser(), null);
-
-			// Clear all cached data (optional, but recommended for security)
+			// Clear all cached data
 			queryClient.clear();
 
 			toast.success("Logged out successfully");
 
-			// Navigate to login page
 			navigate({ to: "/login" });
 		},
-		...options,
-	});
-}
-
-/**
- * Hook for refreshing the access token
- *
- * This is typically called automatically by an interceptor when a 401 is received
- * You generally don't need to call this manually
- *
- * @example
- * ```tsx
- * const refreshToken = useRefreshToken();
- *
- * // In an API interceptor
- * if (response.status === 401) {
- *   await refreshToken.mutateAsync();
- *   // Retry original request
- * }
- * ```
- */
-export function useRefreshToken(
-	options?: UseMutationOptions<void, Error, void>,
-) {
-	return useMutation({
-		mutationFn: async (): Promise<void> => {
-			const response = await fetch("/api/auth/refresh", {
-				method: "POST",
-				credentials: "include",
-			});
-
-			if (!response.ok) {
-				throw new Error("Failed to refresh token");
-			}
-
-			// Backend sets new access token cookie
-		},
-		retry: false, // Don't retry refresh token requests
 		...options,
 	});
 }

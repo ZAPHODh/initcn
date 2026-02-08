@@ -1,67 +1,41 @@
 import { validateOTP } from "@/lib/server/auth/verification";
 import { getUserById, updateUser } from "@/lib/server/auth/user";
-import { storeRefreshToken } from "@/lib/server/auth/session";
+import {
+	generateSessionToken,
+	createSession,
+	invalidateAllUserSessions,
+} from "@/lib/server/auth/session";
 import { rateLimitByEmail, rateLimitByIP } from "@/lib/server/auth/rate-limit";
 import { normalizeEmail, validateEmail } from "@/lib/server/auth/server/utils";
-import {
-	generateAccessToken,
-	generateRefreshToken,
-	getTokenExpiry,
-} from "@/lib/server/auth/server/jwt";
 import type { VerifyOTPRequest, VerifyOTPResponse } from "@/lib/server/auth/types";
 
 /**
  * Verify OTP handler (framework-agnostic)
  *
- * This function validates the OTP and generates JWT tokens
- * The backend framework must set the tokens as httpOnly cookies
+ * This function validates the OTP and creates a session
+ * The backend framework must set the session token as an httpOnly cookie
  *
  * @example
  * ```typescript
- * // Hono
- * import { setCookie } from 'hono/cookie';
+ * // TanStack Start route
+ * case "verify-otp": {
+ *   const result = await verifyOTPHandler({ email, code, clientIP });
  *
- * app.post('/api/auth/verify-otp', async (c) => {
- *   const body = await c.req.json();
- *   const clientIP = c.req.header('x-forwarded-for') || 'unknown';
- *   const result = await verifyOTPHandler({
- *     email: body.email,
- *     code: body.code,
- *     clientIP,
- *   });
- *
- *   if (result.success && result.accessToken && result.refreshToken) {
- *     // Set httpOnly cookies
- *     setCookie(c, 'access_token', result.accessToken, {
- *       httpOnly: true,
- *       secure: true,
- *       sameSite: 'lax',
- *       maxAge: 15 * 60, // 15 minutes
- *     });
- *
- *     setCookie(c, 'refresh_token', result.refreshToken, {
- *       httpOnly: true,
- *       secure: true,
- *       sameSite: 'lax',
- *       maxAge: 30 * 24 * 60 * 60, // 30 days
- *     });
- *
- *     // Remove tokens from response (they're in cookies now)
- *     delete result.accessToken;
- *     delete result.refreshToken;
+ *   if (result.success && result.sessionToken) {
+ *     const headers = new Headers();
+ *     headers.set("Set-Cookie", `session=${result.sessionToken}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}`);
+ *     return json(result, { status: 200, headers });
  *   }
  *
- *   return c.json(result, result.success ? 200 : 400);
- * });
+ *   return json(result, { status: result.success ? 200 : 400 });
+ * }
  * ```
  */
 export async function verifyOTPHandler(request: {
 	email: string;
 	code: string;
 	clientIP: string;
-}): Promise<
-	VerifyOTPResponse & { accessToken?: string; refreshToken?: string }
-> {
+}): Promise<VerifyOTPResponse & { sessionToken?: string }> {
 	try {
 		// 1. Validate email
 		const email = normalizeEmail(request.email);
@@ -143,24 +117,17 @@ export async function verifyOTPHandler(request: {
 			user.emailVerified = true;
 		}
 
-		const [accessToken, refreshToken] = await Promise.all([
-			generateAccessToken(user.id, user.email),
-			generateRefreshToken(user.id),
-		]);
+		// 7. Invalidate all existing sessions and create new one
+		await invalidateAllUserSessions(userId);
+		const sessionToken = generateSessionToken();
+		await createSession(sessionToken, userId);
 
-		const refreshTokenExpiry = getTokenExpiry(
-			process.env.JWT_REFRESH_EXPIRY || "30d",
-		);
-		await storeRefreshToken(refreshToken, user.id, refreshTokenExpiry);
-
-		// 9. Return success with tokens
-		// Backend framework should set these as httpOnly cookies
+		// Return success with session token
+		// Backend framework should set this as an httpOnly cookie
 		return {
 			success: true,
 			message: "Login successful",
-			user,
-			accessToken,
-			refreshToken,
+			sessionToken,
 			rateLimit: {
 				limit: emailRateLimit.limit,
 				remaining: emailRateLimit.remaining,
