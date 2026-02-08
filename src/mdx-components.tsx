@@ -8,10 +8,11 @@ import { ComponentPreview } from "@/components/docs/component-preview";
 import {
   ConfigModal,
   ConfigToggle,
-  InstallCommand,
-  FeatureInstallCommands,
   CurrentOrmBadge,
+  FeatureInstallCommands,
+  ForFramework,
   FrameworkContent,
+  InstallCommand,
 } from "@/components/config-builder";
 
 export function getMDXComponents(components?: MDXComponents): MDXComponents {
@@ -31,6 +32,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     FeatureInstallCommands,
     CurrentOrmBadge,
     FrameworkContent,
+    ForFramework,
     ...components,
   };
 }

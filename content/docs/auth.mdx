@@ -33,8 +33,10 @@ Copy `.env.example.otp` to your `.env.local`:
 cat .env.example.otp >> .env.local
 ```
 
-<FrameworkContent
-  nextjs={<>
+<FrameworkContent>
+
+<ForFramework value="nextjs">
+
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
@@ -49,8 +51,11 @@ cat .env.example.otp >> .env.local
 <Callout type="info">
 In development, emails are logged to console and rate limiting uses in-memory storage. Only `DATABASE_URL` is required to get started.
 </Callout>
-  </>}
-  vite={<>
+
+</ForFramework>
+
+<ForFramework value="vite">
+
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
@@ -63,8 +68,11 @@ In development, emails are logged to console and rate limiting uses in-memory st
 | `GOOGLE_CLIENT_ID` | Optional | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | Optional | Google OAuth client secret |
 | `GOOGLE_REDIRECT_URI` | Optional | `http://localhost:3000/api/auth/oauth/google/callback` |
-  </>}
-  tanstack={<>
+
+</ForFramework>
+
+<ForFramework value="tanstack-start">
+
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
@@ -76,8 +84,10 @@ In development, emails are logged to console and rate limiting uses in-memory st
 | `GOOGLE_CLIENT_ID` | Optional | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | Optional | Google OAuth client secret |
 | `GOOGLE_REDIRECT_URI` | Optional | `http://localhost:3000/api/auth/oauth/google/callback` |
-  </>}
-/>
+
+</ForFramework>
+
+</FrameworkContent>
 
 ### Add Prisma schema
 
@@ -134,21 +144,16 @@ npx prisma db push
 3. Create OAuth 2.0 credentials (Web application)
 4. Add the redirect URI:
 
-<FrameworkContent
-  nextjs={<>`http://localhost:3000/api/auth/login/google/callback`</>}
-  vite={<>`http://localhost:3000/api/auth/oauth/google/callback`</>}
-  tanstack={<>`http://localhost:3000/api/auth/oauth/google/callback`</>}
-/>
+<FrameworkContent>
+<ForFramework value="nextjs">`http://localhost:3000/api/auth/login/google/callback`</ForFramework>
+<ForFramework value={["vite", "tanstack-start"]}>`http://localhost:3000/api/auth/oauth/google/callback`</ForFramework>
+</FrameworkContent>
 
 5. Copy Client ID and Secret to `.env.local`
 
 ### Test the installation
 
-<FrameworkContent
-  nextjs={<>Navigate to `/login` to verify everything works.</>}
-  vite={<>Start your dev server and navigate to `/login`.</>}
-  tanstack={<>Start your dev server and navigate to `/login`.</>}
-/>
+Navigate to `/login` to verify everything works.
 
 </Steps>
 
