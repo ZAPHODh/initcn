@@ -28,7 +28,6 @@ export function InstallCommand({ feature, className }: InstallCommandProps) {
 	const [copied, setCopied] = useState(false);
 	const { config, isLoaded } = useConfig();
 
-	// Get variant(s) to install
 	const variants = isLoaded ? useVariant(feature) : null;
 
 	if (!variants || variants.length === 0) {
@@ -46,7 +45,7 @@ export function InstallCommand({ feature, className }: InstallCommandProps) {
 		);
 	}
 
-	// Build install command (may install multiple packages for layered approach)
+
 	const commands = variants.map(
 		(variant) => `${PM_COMMANDS[activePm]} shadcn@latest add @initcn/${variant}`,
 	);
@@ -62,7 +61,6 @@ export function InstallCommand({ feature, className }: InstallCommandProps) {
 		<div
 			className={cn("rounded-lg border bg-fd-card overflow-hidden", className)}
 		>
-			{/* Package manager tabs */}
 			<div className="flex border-b bg-fd-muted/30">
 				{PACKAGE_MANAGERS.map((pm) => (
 					<button
@@ -93,7 +91,7 @@ export function InstallCommand({ feature, className }: InstallCommandProps) {
 					aria-label="Copy command"
 				>
 					{copied ? (
-						<Check className="size-4 text-green-500" />
+						<Check className="size-4" />
 					) : (
 						<Copy className="size-4 text-fd-muted-foreground" />
 					)}
