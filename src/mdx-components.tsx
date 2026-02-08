@@ -11,6 +11,7 @@ import {
   InstallCommand,
   FeatureInstallCommands,
   CurrentOrmBadge,
+  FrameworkContent,
 } from "@/components/config-builder";
 
 export function getMDXComponents(components?: MDXComponents): MDXComponents {
@@ -29,6 +30,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     InstallCommand,
     FeatureInstallCommands,
     CurrentOrmBadge,
+    FrameworkContent,
     ...components,
   };
 }

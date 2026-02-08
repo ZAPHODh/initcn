@@ -1,6 +1,6 @@
 ---
 title: OTP
-description: Production-ready OTP authentication for Next.js applications
+description: Production-ready OTP authentication with Google OAuth
 ---
 
 ## Installation
@@ -11,86 +11,30 @@ description: Production-ready OTP authentication for Next.js applications
 
 ## What is Installed
 
-### Pages
-
-| File | Path | Description |
-|------|------|-------------|
-| `page.tsx` | `app/(auth)/login/page.tsx` | Login page with OTP form |
-| `page.tsx` | `app/@modal/(.)login/page.tsx` | Modal interceptor for login |
-| `default.tsx` | `app/@modal/default.tsx` | Default modal slot |
-
-### API Routes
-
-| File | Path | Description |
-|------|------|-------------|
-| `route.ts` | `app/api/auth/login/send-otp/route.ts` | Send OTP endpoint |
-| `route.ts` | `app/api/auth/login/verify-otp/route.ts` | Verify OTP endpoint |
-| `route.ts` | `app/api/auth/login/google/route.ts` | Google OAuth initiation |
-| `route.ts` | `app/api/auth/login/google/callback/route.ts` | Google OAuth callback |
-
-### Server Actions
-
-| File | Path | Description |
-|------|------|-------------|
-| `send-otp.ts` | `app/actions/send-otp.ts` | Send OTP server action |
-| `verify-otp.ts` | `app/actions/verify-otp.ts` | Verify OTP server action |
-| `logout.ts` | `app/actions/logout.ts` | Logout server action |
-| `diagnostics.ts` | `app/actions/diagnostics.ts` | Health check action |
-
-### Components
-
-| File | Path | Description |
-|------|------|-------------|
-| `auth-form.tsx` | `components/auth-form.tsx` | API-based auth form |
-| `auth-form-server-action.tsx` | `components/auth-form-server-action.tsx` | Server Action auth form |
-| `login-dialog.tsx` | `components/login-dialog.tsx` | Modal login dialog |
-| `diagnostics-panel.tsx` | `components/diagnostics-panel.tsx` | Dev diagnostics UI |
-
-### Server Utilities
-
-| File | Path | Description |
-|------|------|-------------|
-| `session.ts` | `lib/server/auth/session.ts` | Session management |
-| `google.ts` | `lib/server/auth/google.ts` | Google OAuth setup |
-| `otp.ts` | `lib/server/auth/otp.ts` | OTP generation utilities |
-| `cookies.ts` | `lib/server/auth/cookies.ts` | Cookie management |
-| `utils.ts` | `lib/server/auth/utils.ts` | Email validation, IP extraction |
-| `middleware.ts` | `lib/server/auth/middleware.ts` | Auth middleware helpers |
-| `db.ts` | `lib/server/db.ts` | Prisma client instance |
-| `mail.ts` | `lib/server/mail.ts` | Email sending (Resend) |
-| `rate-limit.ts` | `lib/server/auth/rate-limit.ts` | Rate limiting (Upstash) |
-| `types.ts` | `lib/server/auth/types.ts` | TypeScript types |
-
-### Client Utilities
-
-| File | Path | Description |
-|------|------|-------------|
-| `safe-action.ts` | `lib/client/safe-action.ts` | next-safe-action client |
-
-### Other Files
-
-| File | Path | Description |
-|------|------|-------------|
-| `otp-email.tsx` | `emails/otp-email.tsx` | React Email template |
-| `prisma.schema` | `lib/server/auth/schemas/prisma.schema` | Prisma schema (copy manually) |
-| `.env.example.otp` | `.env.example.otp` | Environment variables template |
+| Category | Includes |
+|----------|----------|
+| Pages / Routes | Login page, modal interceptor (Next.js) |
+| API Routes | send-otp, verify-otp, google, google-callback |
+| Components | `auth-form`, `login-dialog` |
+| Server utilities | session, otp, google, cookies, mail, rate-limit |
+| DB schema | `prisma.schema` (User, Session, VerificationCode) |
 
 ---
 
-## What's Next
+## Setup
 
 <Steps>
 
 ### Add environment variables
 
-Copy the installed `.env.example.otp` to your `.env.local`:
+Copy `.env.example.otp` to your `.env.local`:
 
 ```bash
 cat .env.example.otp >> .env.local
 ```
 
-Then configure:
-
+<FrameworkContent
+  nextjs={<>
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
@@ -98,17 +42,46 @@ Then configure:
 | `AUTH_EMAIL_FROM` | Production | Sender email address |
 | `UPSTASH_REDIS_REST_URL` | Production | Upstash Redis URL |
 | `UPSTASH_REDIS_REST_TOKEN` | Production | Upstash Redis token |
-| `GOOGLE_CLIENT_ID` | Yes | Google OAuth client ID |
-| `GOOGLE_CLIENT_SECRET` | Yes | Google OAuth client secret |
-| `GOOGLE_REDIRECT_URI` | Yes | OAuth callback URL |
+| `GOOGLE_CLIENT_ID` | Optional | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Optional | Google OAuth client secret |
+| `GOOGLE_REDIRECT_URI` | Optional | `http://localhost:3000/api/auth/login/google/callback` |
 
 <Callout type="info">
-**Development mode:** In development, emails are logged to console and rate limiting uses in-memory storage. Just set `DATABASE_URL` and `GOOGLE_*` variables to get started.
+In development, emails are logged to console and rate limiting uses in-memory storage. Only `DATABASE_URL` is required to get started.
 </Callout>
+  </>}
+  vite={<>
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `RESEND_API_KEY` | Production | Resend API key for emails |
+| `AUTH_EMAIL_FROM` | Production | Sender email address |
+| `UPSTASH_REDIS_REST_URL` | Production | Upstash Redis URL (optional, falls back to in-memory) |
+| `UPSTASH_REDIS_REST_TOKEN` | Production | Upstash Redis token |
+| `FRONTEND_URL` | Yes | Frontend origin, e.g. `http://localhost:5173` |
+| `BACKEND_URL` | Yes | API server origin, e.g. `http://localhost:3001` |
+| `GOOGLE_CLIENT_ID` | Optional | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Optional | Google OAuth client secret |
+| `GOOGLE_REDIRECT_URI` | Optional | `http://localhost:3000/api/auth/oauth/google/callback` |
+  </>}
+  tanstack={<>
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `RESEND_API_KEY` | Production | Resend API key for emails |
+| `UPSTASH_REDIS_REST_URL` | Production | Upstash Redis URL (optional, falls back to in-memory) |
+| `UPSTASH_REDIS_REST_TOKEN` | Production | Upstash Redis token |
+| `FRONTEND_URL` | Yes | Frontend origin, e.g. `http://localhost:5173` |
+| `BACKEND_URL` | Yes | API server origin, e.g. `http://localhost:3001` |
+| `GOOGLE_CLIENT_ID` | Optional | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Optional | Google OAuth client secret |
+| `GOOGLE_REDIRECT_URI` | Optional | `http://localhost:3000/api/auth/oauth/google/callback` |
+  </>}
+/>
 
 ### Add Prisma schema
 
-Copy the schema from `lib/server/auth/schemas/prisma.schema` to your `prisma/schema.prisma`:
+Copy `lib/server/auth/schemas/prisma.schema` to your `prisma/schema.prisma`:
 
 ```prisma
 model User {
@@ -149,25 +122,33 @@ model Session {
 }
 ```
 
-Then run:
-
 ```bash
 npx prisma generate
 npx prisma db push
 ```
 
-### Set up Google OAuth
+### Set up Google OAuth (optional)
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing
-3. Enable Google+ API
-4. Create OAuth 2.0 Client ID credentials
-5. Add redirect URI: `http://localhost:3000/api/auth/login/google/callback`
-6. Copy Client ID and Secret to `.env.local`
+2. Create a project and enable the Google+ API
+3. Create OAuth 2.0 credentials (Web application)
+4. Add the redirect URI:
+
+<FrameworkContent
+  nextjs={<>`http://localhost:3000/api/auth/login/google/callback`</>}
+  vite={<>`http://localhost:3000/api/auth/oauth/google/callback`</>}
+  tanstack={<>`http://localhost:3000/api/auth/oauth/google/callback`</>}
+/>
+
+5. Copy Client ID and Secret to `.env.local`
 
 ### Test the installation
 
-Navigate to `/login` to verify everything works.
+<FrameworkContent
+  nextjs={<>Navigate to `/login` to verify everything works.</>}
+  vite={<>Start your dev server and navigate to `/login`.</>}
+  tanstack={<>Start your dev server and navigate to `/login`.</>}
+/>
 
 </Steps>
 
@@ -175,446 +156,30 @@ Navigate to `/login` to verify everything works.
 
 ## API Reference
 
-### Server Actions
+### Session
 
-#### sendOTPAction
-
-Sends a one-time password to the user's email.
-
-```ts
-import { sendOTPAction } from "@/app/actions/send-otp";
-
-const result = await sendOTPAction({ email: "user@example.com" });
-```
-
-**Input:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `email` | `string` | Yes | User's email address |
-
-**Returns:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `success` | `boolean` | Whether OTP was sent |
-| `message` | `string` | Success message |
-| `error` | `string?` | Error message if failed |
-| `rateLimit` | `object?` | Rate limit info if throttled |
-
----
-
-#### verifyOTPAction
-
-Verifies the OTP and creates a session.
-
-```ts
-import { verifyOTPAction } from "@/app/actions/verify-otp";
-
-const result = await verifyOTPAction({ email: "user@example.com", code: "123456" });
-```
-
-**Input:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `email` | `string` | Yes | User's email address |
-| `code` | `string` | Yes | 6-digit OTP code |
-
-**Returns:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `success` | `boolean` | Whether verification succeeded |
-| `error` | `string?` | Error message if failed |
-| `attemptsRemaining` | `number?` | Failed attempts remaining before lockout |
-| `rateLimit` | `object?` | Rate limit info if throttled |
-
----
-
-#### logout
-
-Invalidates the current session and redirects to home.
-
-```ts
-import { logout } from "@/app/actions/logout";
-import { useAction } from "next-safe-action/hooks";
-
-const { execute } = useAction(logout);
-execute();
-```
-
-**Context (provided by authActionClient):**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `ctx.user` | `User` | Current user object |
-| `ctx.userId` | `string` | Current user ID |
-| `ctx.sessionId` | `string` | Current session ID |
-
----
-
-### Session Management
-
-#### getCurrentSession
-
-Gets the current user session from cookies. Memoized per request with React's `cache()`.
+| Function | Description |
+|----------|-------------|
+| `getCurrentSession()` | Returns `{ user, session }` for the current request. Memoized via React `cache()`. |
+| `validateSessionToken(token)` | Validates a token and auto-renews if expiring within 15 days. |
+| `createSession(token, userId)` | Creates a new session in the database. |
+| `invalidateSession(sessionId)` | Deletes a session by ID. |
+| `invalidateAllUserSessions(userId)` | Deletes all sessions for a user ("logout everywhere"). |
 
 ```ts
 import { getCurrentSession } from "@/lib/server/auth";
 
 const { user, session } = await getCurrentSession();
+if (!user) redirect("/login");
 ```
 
-**Returns:** `Promise<SessionValidationResult>`
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `user` | `User \| null` | User object if authenticated |
-| `session` | `Session \| null` | Session object if valid |
-
----
-
-#### validateSessionToken
-
-Validates a session token and returns user/session. Automatically renews if expiring soon.
-
-```ts
-import { validateSessionToken } from "@/lib/server/auth";
-
-const { user, session } = await validateSessionToken(token);
-```
-
-**Parameters:**
-
-| Name | Type | Description |
-|------|------|-------------|
-| `token` | `string` | Session token from cookie |
-
-**Returns:** `Promise<SessionValidationResult>`
-
----
-
-#### createSession
-
-Creates a new session for a user.
-
-```ts
-import { createSession } from "@/lib/server/auth";
-
-const session = await createSession(token, userId);
-```
-
-**Parameters:**
-
-| Name | Type | Description |
-|------|------|-------------|
-| `token` | `string` | Session token |
-| `userId` | `string` | User ID |
-
-**Returns:** `Promise<Session>`
-
----
-
-#### invalidateSession
-
-Deletes a session by ID.
-
-```ts
-import { invalidateSession } from "@/lib/server/auth";
-
-await invalidateSession(sessionId);
-```
-
-**Parameters:**
-
-| Name | Type | Description |
-|------|------|-------------|
-| `sessionId` | `string` | Session ID to invalidate |
-
----
-
-#### invalidateAllUserSessions
-
-Deletes all sessions for a user. Useful for "logout everywhere".
-
-```ts
-import { invalidateAllUserSessions } from "@/lib/server/auth";
-
-await invalidateAllUserSessions(userId);
-```
-
-**Parameters:**
-
-| Name | Type | Description |
-|------|------|-------------|
-| `userId` | `string` | User ID |
-
----
-
-#### generateSessionToken
-
-Generates a cryptographically secure session token.
-
-```ts
-import { generateSessionToken } from "@/lib/server/auth";
-
-const token = generateSessionToken();
-```
-
-**Returns:** `string`
-
----
-
-### OTP Utilities
-
-#### generateOTP
-
-Generates a random numeric OTP.
-
-```ts
-import { generateOTP } from "@/lib/server/auth";
-
-const code = generateOTP(6); // "482937"
-```
-
-**Parameters:**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `length` | `number` | `6` | OTP length |
-
-**Returns:** `string`
-
----
-
-#### getOTPExpiry
-
-Gets the expiry date for an OTP.
-
-```ts
-import { getOTPExpiry } from "@/lib/server/auth";
-
-const expiresAt = getOTPExpiry(3); // 3 minutes from now
-```
-
-**Parameters:**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `minutes` | `number` | `3` | Minutes until expiry |
-
-**Returns:** `Date`
-
----
-
-#### isOTPExpired
-
-Checks if an OTP has expired.
-
-```ts
-import { isOTPExpired } from "@/lib/server/auth";
-
-const expired = isOTPExpired(verificationCode.expiresAt);
-```
-
-**Parameters:**
-
-| Name | Type | Description |
-|------|------|-------------|
-| `expiresAt` | `Date` | OTP expiry date |
-
-**Returns:** `boolean`
-
----
-
-### Cookie Utilities
-
-#### setSessionTokenCookie
-
-Sets the session cookie.
-
-```ts
-import { setSessionTokenCookie } from "@/lib/server/auth";
-
-await setSessionTokenCookie(token, expiresAt, "session");
-```
-
-**Parameters:**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `token` | `string` | - | Session token |
-| `expiresAt` | `Date` | - | Cookie expiry |
-| `name` | `string` | `"session"` | Cookie name |
-
----
-
-#### getSessionTokenCookie
-
-Gets the session cookie value.
-
-```ts
-import { getSessionTokenCookie } from "@/lib/server/auth";
-
-const token = await getSessionTokenCookie("session");
-```
-
-**Parameters:**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `name` | `string` | `"session"` | Cookie name |
-
-**Returns:** `Promise<string | undefined>`
-
----
-
-#### deleteSessionTokenCookie
-
-Deletes the session cookie.
-
-```ts
-import { deleteSessionTokenCookie } from "@/lib/server/auth";
-
-await deleteSessionTokenCookie();
-```
-
----
-
-### Validation Utilities
-
-#### validateEmail
-
-Validates email format.
-
-```ts
-import { validateEmail } from "@/lib/server/auth";
-
-const isValid = validateEmail("user@example.com"); // true
-```
-
-**Returns:** `boolean`
-
----
-
-#### normalizeEmail
-
-Normalizes email to lowercase and trims whitespace.
-
-```ts
-import { normalizeEmail } from "@/lib/server/auth";
-
-const email = normalizeEmail("  User@Example.COM  "); // "user@example.com"
-```
-
-**Returns:** `string`
-
----
-
-#### extractClientIP
-
-Extracts client IP from request headers.
-
-```ts
-import { extractClientIP } from "@/lib/server/auth";
-
-const ip = extractClientIP(request);
-```
-
-**Returns:** `string`
-
----
-
-### Rate Limiting
-
-#### rateLimitByEmail
-
-Checks rate limit by email address.
-
-```ts
-import { rateLimitByEmail } from "@/lib/server/auth";
-
-const result = await rateLimitByEmail("user@example.com", 3, "15 m");
-```
-
-**Parameters:**
-
-| Name | Type | Description |
-|------|------|-------------|
-| `email` | `string` | Email address |
-| `requests` | `number` | Max requests |
-| `window` | `string` | Time window (e.g., `"15 m"`) |
-
-**Returns:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `success` | `boolean` | Whether request is allowed |
-| `limit` | `number` | Max requests |
-| `remaining` | `number` | Requests remaining |
-| `reset` | `number` | Reset timestamp |
-
----
-
-#### rateLimitByIP
-
-Checks rate limit by IP address.
-
-```ts
-import { rateLimitByIP } from "@/lib/server/auth";
-
-const result = await rateLimitByIP("192.168.1.1", 20, "15 m");
-```
-
-**Parameters:**
-
-| Name | Type | Description |
-|------|------|-------------|
-| `ip` | `string` | IP address |
-| `requests` | `number` | Max requests |
-| `window` | `string` | Time window |
-
----
-
-#### trackFailedAttempt
-
-Tracks failed verification attempts for lockout.
-
-```ts
-import { trackFailedAttempt } from "@/lib/server/auth";
-
-const result = await trackFailedAttempt("verify-otp:user@example.com", 10, 3600);
-```
-
-**Parameters:**
-
-| Name | Type | Description |
-|------|------|-------------|
-| `key` | `string` | Unique identifier |
-| `maxAttempts` | `number` | Max attempts before lockout |
-| `windowSeconds` | `number` | Window in seconds |
-
-**Returns:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `locked` | `boolean` | Whether account is locked |
-| `remaining` | `number` | Attempts remaining |
-
----
-
-#### resetFailedAttempts
-
-Resets failed attempt counter.
-
-```ts
-import { resetFailedAttempts } from "@/lib/server/auth";
-
-await resetFailedAttempts("verify-otp:user@example.com");
-```
-
----
+### OTP
+
+| Function | Description |
+|----------|-------------|
+| `generateOTP(length?)` | Generates a random numeric OTP (default length: 6). |
+| `getOTPExpiry(minutes?)` | Returns expiry Date (default: 3 minutes). |
+| `isOTPExpired(expiresAt)` | Checks if an OTP has expired. |
 
 ### Types
 
@@ -639,36 +204,6 @@ interface SessionValidationResult {
   session: Session | null;
   user: User | null;
 }
-
-interface VerificationCode {
-  id: string;
-  userId: string;
-  email: string;
-  code: string;
-  expiresAt: Date;
-  createdAt: Date;
-}
-
-interface SendOTPRequest {
-  email: string;
-}
-
-interface SendOTPResponse {
-  success: boolean;
-  message: string;
-  error?: string;
-}
-
-interface VerifyOTPRequest {
-  email: string;
-  code: string;
-}
-
-interface VerifyOTPResponse {
-  success: boolean;
-  message: string;
-  error?: string;
-}
 ```
 
 ### Constants
@@ -678,5 +213,5 @@ interface VerifyOTPResponse {
 | `OTP_LENGTH` | `6` | Default OTP length |
 | `OTP_EXPIRY_MINUTES` | `3` | Default OTP expiry |
 | `SESSION_EXPIRY_DAYS` | `30` | Session duration |
-| `SESSION_RENEWAL_THRESHOLD_DAYS` | `15` | Renew session if less than this |
-| `SESSION_COOKIE_NAME` | `"session"` | Default cookie name |
+| `SESSION_RENEWAL_THRESHOLD_DAYS` | `15` | Renew if less than this remaining |
+| `SESSION_COOKIE_NAME` | `"session"` | Cookie name |
