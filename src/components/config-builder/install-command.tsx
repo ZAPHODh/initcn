@@ -79,7 +79,6 @@ export function InstallCommand({ feature, className }: InstallCommandProps) {
 				))}
 			</div>
 
-			{/* Command display */}
 			<div className="relative p-4">
 				<pre className="overflow-x-auto">
 					<code className="text-sm font-mono">{command}</code>
@@ -98,7 +97,6 @@ export function InstallCommand({ feature, className }: InstallCommandProps) {
 				</button>
 			</div>
 
-			{/* Info about layered installs */}
 			{variants.length > 1 && (
 				<div className="px-4 pb-4 pt-0">
 					<p className="text-xs text-fd-muted-foreground">
@@ -110,7 +108,6 @@ export function InstallCommand({ feature, className }: InstallCommandProps) {
 	);
 }
 
-// Component for showing all features with their install commands
 export function FeatureInstallCommands() {
 	const features: { id: Feature; name: string; description: string }[] = [
 		{

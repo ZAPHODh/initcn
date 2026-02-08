@@ -162,7 +162,7 @@ export function ConfigToggle({
 
 export function ConfigModal() {
 	const [open, setOpen] = useState(false);
-	const { config, setOrm, setFramework, isPending } = useConfig();
+	const { config, setOrm, setFramework } = useConfig();
 
 	const handleFrameworkChange = (framework: Framework) => {
 		setFramework(framework);
@@ -188,7 +188,6 @@ export function ConfigModal() {
 					</DialogDescription>
 				</DialogHeader>
 				<div className="space-y-6 py-4">
-					{/* Framework Selection */}
 					<div className="space-y-3">
 						<label className="text-sm font-medium">Framework</label>
 						<div className="grid gap-2">
@@ -232,7 +231,6 @@ export function ConfigModal() {
 						</div>
 					</div>
 
-					{/* ORM Selection */}
 					<div className="space-y-3">
 						<label className="text-sm font-medium">Database / ORM</label>
 						<div className="grid gap-2">
