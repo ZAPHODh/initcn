@@ -16,5 +16,5 @@
 		"@tanstack/react-router",
 		"@tanstack/start"
 	],
-	"registryDependencies": ["input-otp", "dialog"]
+	"registryDependencies": ["input-otp", "dialog", "button"]
 }

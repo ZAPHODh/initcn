@@ -17,5 +17,5 @@
 		"@react-email/components"
 	],
 	"devDependencies": ["@types/node"],
-	"registryDependencies": ["input-otp", "dialog"]
+	"registryDependencies": ["input-otp", "dialog", "button"]
 }

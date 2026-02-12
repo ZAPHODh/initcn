@@ -6,7 +6,7 @@ import {
 	InputOTP,
 	InputOTPGroup,
 	InputOTPSlot,
-} from "@/registry/ui/input-otp";
+} from "@/components/ui/input-otp";
 
 interface AuthFormServerActionProps {
 	sendOTPAction: (prevState: unknown, formData: FormData) => Promise<{

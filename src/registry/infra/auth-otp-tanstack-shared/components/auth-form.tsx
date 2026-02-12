@@ -1,11 +1,10 @@
 import { memo, useCallback, useEffect, useState } from "react";
 import { useForm } from "@tanstack/react-form";
-import { toast } from "sonner";
 import {
 	InputOTP,
 	InputOTPGroup,
 	InputOTPSlot,
-} from "@/registry/ui/input-otp";
+} from "@/components/ui/input-otp";
 import { useSendOTP, useVerifyOTP } from "@/lib/client/auth-mutations";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -60,7 +59,7 @@ interface AuthFormProps {
  * ```
  */
 export const AuthForm = memo(function AuthForm({
-	redirectTo = DEFAULT_REDIRECT,
+	redirectTo: _redirectTo = DEFAULT_REDIRECT,
 	labels = DEFAULT_LABELS,
 }: AuthFormProps) {
 	const [currentStep, setCurrentStep] = useState<1 | 2>(1);

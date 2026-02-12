@@ -6,6 +6,6 @@
   "capabilities": {
     "framework": ["nextjs"]
   },
-  "dependencies": ["next-international"],
+  "dependencies": ["next-international", "lucide-react"],
   "registryDependencies": []
 }
