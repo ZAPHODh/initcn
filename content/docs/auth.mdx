@@ -63,11 +63,13 @@ In development, emails are logged to console and rate limiting uses in-memory st
 | `AUTH_EMAIL_FROM` | Production | Sender email address |
 | `UPSTASH_REDIS_REST_URL` | Production | Upstash Redis URL (optional, falls back to in-memory) |
 | `UPSTASH_REDIS_REST_TOKEN` | Production | Upstash Redis token |
-| `FRONTEND_URL` | Yes | Frontend origin, e.g. `http://localhost:5173` |
-| `BACKEND_URL` | Yes | API server origin, e.g. `http://localhost:3001` |
 | `GOOGLE_CLIENT_ID` | Optional | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | Optional | Google OAuth client secret |
-| `GOOGLE_REDIRECT_URI` | Optional | `http://localhost:3000/api/auth/google/callback` |
+| `GOOGLE_REDIRECT_URI` | Optional | `http://localhost:5173/api/auth/google/callback` |
+
+<Callout type="info">
+In development, the Vite plugin runs API routes at the same origin (`http://localhost:5173`) — no separate backend server needed!
+</Callout>
 
 </ForFramework>
 
@@ -136,6 +138,35 @@ model Session {
 npx prisma generate
 npx prisma db push
 ```
+
+### Configure Vite (Vite only)
+
+<FrameworkContent>
+<ForFramework value="vite">
+
+The Vite setup includes a plugin that handles API routes during development. Add the plugin to your `vite.config.ts`:
+
+```typescript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import { authApiRoutesPlugin } from './vite.config.auth'
+
+export default defineConfig({
+  plugins: [
+    react(),
+    authApiRoutesPlugin(), // Add this line
+  ],
+  // Your other config...
+})
+```
+
+This enables API routes to run alongside your frontend during `npm run dev`. No separate backend server needed in development!
+
+</ForFramework>
+<ForFramework value={["nextjs", "tanstack-start"]}>
+{/* No additional config needed for Next.js or TanStack Start */}
+</ForFramework>
+</FrameworkContent>
 
 ### Set up Google OAuth (optional)
 

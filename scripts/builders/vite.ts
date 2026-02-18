@@ -16,6 +16,9 @@ export class ViteBuilder extends BaseInfraBuilder {
 		// Environment files (root)
 		".env.example.*": ".env.example",
 
+		// Vite config extension (root)
+		"vite.config.ts": "vite.config.auth.ts",
+
 		// API endpoints (backend framework-agnostic)
 		"api/*": "server/api/*",
 
