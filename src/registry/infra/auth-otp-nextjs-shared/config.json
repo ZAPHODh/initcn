@@ -13,7 +13,9 @@
     "@oslojs/encoding",
     "next-safe-action",
     "@tanstack/react-form",
-    "sonner"
+    "sonner",
+    "class-variance-authority",
+    "@radix-ui/react-slot"
   ],
   "registryDependencies": ["input-otp", "dialog", "button"]
 }

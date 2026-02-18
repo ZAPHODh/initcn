@@ -14,7 +14,9 @@
 		"@tanstack/react-form",
 		"@tanstack/react-query",
 		"react-router-dom",
-		"@react-email/components"
+		"@react-email/components",
+		"class-variance-authority",
+		"@radix-ui/react-slot"
 	],
 	"devDependencies": ["@types/node"],
 	"registryDependencies": ["input-otp", "dialog", "button"]
